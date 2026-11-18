@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12shades – Farbpaletten-Generator</title>
+<style>
+  :root { --bg:#fafaf9; --fg:#1c1917; --mut:#78716c; --line:#e7e5e4; --card:#fff; --acc:#1c1917; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141210; --fg:#f5f5f4; --mut:#a8a29e; --line:#2e2a27; --card:#1c1917; --acc:#f5f5f4; } }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg); color:var(--fg); }
+  main { max-width: 1360px; margin: 0 auto; padding: 32px 20px 64px; }
+  h1 { font-size: 24px; margin: 0 0 20px; letter-spacing: -.01em; }
+  p.sub { color: var(--mut); margin: 0 0 20px; }
+  .grid { display:grid; grid-template-columns: 300px 1fr; gap: 24px; align-items:start; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; }
+  label { display:block; font-size:12px; font-weight:600; color:var(--mut); margin: 14px 0 4px; text-transform:uppercase; letter-spacing:.04em; }
+  label.first { margin-top:0; }
+  #editsel { padding-bottom:14px; margin-bottom:14px; border-bottom:1px solid var(--line); }
+  [hidden] { display:none !important; }
+  input[type=text], select { width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:transparent; color:inherit; font:inherit; }
+  .row { display:flex; gap:8px; align-items:center; }
+  input[type=color] { width:44px; height:38px; padding:2px; border:1px solid var(--line); border-radius:8px; background:transparent; flex:none; }
+  input[type=range] { width:100%; accent-color: var(--acc); }
+  .val { float:right; font-variant-numeric: tabular-nums; color:var(--fg); text-transform:none; letter-spacing:0; }
+  .seg { display:flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  .seg button { flex:1; padding:7px; border:0; background:transparent; color:inherit; font:inherit; cursor:pointer; }
+  .seg button[aria-pressed=true] { background:var(--acc); color:var(--bg); }
+  .btn { padding:7px 12px; border:1px solid var(--line); border-radius:8px; background:transparent; color:inherit; font:inherit; font-size:13px; cursor:pointer; }
+  .btn:hover { border-color: var(--mut); }
+  .btn:disabled { opacity:.4; cursor:not-allowed; }
+  .btn.primary { background:var(--acc); color:var(--bg); border-color:var(--acc); font-weight:600; }
+  .chk { display:flex; gap:8px; align-items:center; margin-top:14px; font-size:13px; color:var(--mut); text-transform:none; letter-spacing:0; font-weight:400; }
+  .err { color:#dc2626; font-size:13px; min-height:18px; margin-top:6px; }
+  /* Palettenleiste */
+  .pals { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; align-items:center; }
+  .pal { display:flex; align-items:center; gap:8px; padding:6px 12px 6px 8px; border:1px solid var(--line); border-radius:999px; background:var(--card); color:inherit; font:inherit; font-size:14px; cursor:pointer; }
+  .pal i { width:16px; height:16px; border-radius:50%; border:1px solid rgba(0,0,0,.15); }
+  .pal[aria-pressed=true] { border-color:var(--acc); box-shadow: 0 0 0 1px var(--acc); }
+  .actions { display:flex; gap:6px; margin-top:16px; flex-wrap:wrap; }
+  /* Paletten-Zeilen */
+  .prow { margin-bottom:18px; padding:10px; border-radius:12px; border:1px solid transparent; }
+  .prow.active { border-color:var(--line); background:var(--card); }
+  .prow h3 { margin:0 0 8px; font-size:14px; display:flex; justify-content:space-between; cursor:pointer; }
+  .prow h3 small { color:var(--mut); font-weight:400; }
+  .swatches { container-type:inline-size; display:grid; grid-template-columns: repeat(var(--n, 12), minmax(0, 1fr)); gap:6px; }
+  .sw { min-width:0; overflow:hidden; border-radius:10px; padding:10px 6px; min-height:74px; display:flex; flex-direction:column; justify-content:space-between; align-items:flex-start; text-align:left; cursor:pointer; border:1px solid rgba(0,0,0,.08); font:inherit; font-variant-numeric: tabular-nums; position:relative; }
+  .sw b { font-size: clamp(10px, calc((100cqw / var(--n, 12) - 18px) / 2), 14px); }
+  .sw span { font-size: clamp(8px, calc((100cqw / var(--n, 12) - 18px) / 4.4), 11.5px); white-space:nowrap; font-family: ui-monospace, Menlo, monospace; opacity:.9; }
+  @container (max-width: 520px) { .sw { min-height:108px; padding:8px 3px; align-items:center; } .sw span { writing-mode:vertical-rl; font-size:10px; } }
+  .sw.base::after { content:""; position:absolute; left:6px; right:6px; bottom:4px; height:3px; border-radius:2px; background:currentColor; opacity:.9; }
+  .sw.copied { outline:2px solid currentColor; outline-offset:-4px; }
+  .sw.copied span { font-weight:700; font-family:inherit; }
+  .out { margin-top:8px; }
+  .tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+  .tabs button { padding:5px 10px; border:1px solid var(--line); border-radius:999px; background:transparent; color:inherit; font:inherit; font-size:13px; cursor:pointer; }
+  .tabs button[aria-pressed=true] { background:var(--acc); color:var(--bg); border-color:var(--acc); }
+  pre { margin:0; padding:14px; border-radius:10px; background:var(--bg); border:1px solid var(--line); overflow:auto; font:12.5px/1.6 ui-monospace, Menlo, monospace; max-height:340px; }
+  .exrow { display:flex; align-items:center; gap:12px; margin-bottom:10px; flex-wrap:wrap; }
+  .out { container-type:inline-size; }
+  @container (max-width: 740px) { .exrow .sep { display:none; } }
+  .exrow .sep { width:1px; height:22px; background:var(--line); margin:0 4px; }
+  @media (max-width: 560px) { .exrow .sep { display:none; } }
+  .exrow .tabs { margin-bottom:0; }
+  .acts { display:flex; gap:6px; flex-wrap:wrap; }
+  .act { display:inline-flex; align-items:center; gap:8px; padding:5px 12px 5px 10px; border:1px solid var(--acc); border-radius:999px; background:var(--bg); color:inherit; font:inherit; font-size:13px; font-weight:600; cursor:pointer; }
+  .act:hover { background:var(--card); }
+  .act .ico { flex:none; }
+  pre { margin-top:14px; }
+  .share { margin-left:auto; }
+  .pal small { color:var(--mut); font-size:12px; }
+  .hint { font-size:12.5px; color:var(--mut); margin:8px 0 0; }
+  .sug-wrap { margin-bottom:16px; }
+  .sug-head { display:flex; justify-content:space-between; align-items:baseline; gap:12px; flex-wrap:wrap; cursor:pointer; list-style:none; user-select:none; }
+  .sug-head::-webkit-details-marker { display:none; }
+  details[open] > .sug-head { margin-bottom:6px; }
+  .sug-head h3 { margin:0; font-size:14px; }
+  .sug-head h3 { display:flex; align-items:center; gap:8px; }
+  .sug-head h3::before { content:""; flex:none; width:7px; height:7px; margin:0 6px 0 3px; border-right:2px solid var(--mut); border-bottom:2px solid var(--mut); transform:rotate(-45deg); transition:transform .15s; }
+  details[open] > .sug-head h3::before { transform:rotate(45deg) translate(-2px, -2px); }
+  .sug-sub { font-size:12.5px; color:var(--mut); }
+  .sug-group { display:grid; grid-template-columns: 190px 1fr; gap:6px 16px; padding:12px 0; border-top:1px solid var(--line); }
+  .sug-group:first-of-type { border-top:0; }
+  @media (max-width: 700px) { .sug-group { grid-template-columns: 1fr; } }
+  .sug-title { font-weight:600; font-size:13.5px; } .sug-desc { font-size:12px; color:var(--mut); margin-top:2px; }
+  .sug-all { margin-top:6px; padding:0; border:0; background:none; color:var(--mut); font:inherit; font-size:12px; text-decoration:underline; cursor:pointer; }
+  .sug-all:hover { color:var(--fg); } .sug-all:disabled { text-decoration:none; opacity:.6; cursor:default; }
+  .sug-chips { display:flex; flex-wrap:wrap; gap:10px; align-content:flex-start; }
+  .chip { width:170px; padding:8px; border:1px solid var(--line); border-radius:10px; background:transparent; color:inherit; font:inherit; text-align:left; cursor:pointer; }
+  .chip:hover { border-color:var(--mut); }
+  .chip.added { cursor:default; opacity:.65; }
+  .chip .strip { display:flex; height:26px; border-radius:6px; overflow:hidden; margin-bottom:6px; }
+  .chip .strip i { flex:1; }
+  .chip .meta { display:flex; justify-content:space-between; font-size:12px; gap:6px; }
+  .chip .meta b { font-weight:600; } .chip .meta span { color:var(--mut); font-family: ui-monospace, Menlo, monospace; }
+  .sug-note { font-size:13px; color:var(--mut); padding:8px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>12shades</h1>
+
+  <div class="pals" id="pals"></div>
+
+  <div class="grid">
+    <section class="card">
+      <div id="editsel" hidden>
+        <label class="first" for="editpal">Palette bearbeiten</label>
+        <select id="editpal"></select>
+      </div>
+      <label id="namelabel" class="first" for="name">Name</label>
+      <input id="name" type="text" spellcheck="false">
+      <label for="hex">Basisfarbe</label>
+      <div class="row"><input id="picker" type="color"><input id="hex" type="text" maxlength="7" spellcheck="false"></div>
+      <div class="err" id="err"></div>
+      <label for="stop">Basisfarbe Shade</label>
+      <select id="stop"></select>
+      <label>Modus</label>
+      <div class="seg" id="mode"><button data-v="linear">Linear</button><button data-v="perceived">Perceived</button></div>
+      <label for="h">Farbton-Shift <span class="val" id="hv"></span></label>
+      <input id="h" type="range" min="-20" max="20" step="1">
+      <label for="s">Sättigung an den Rändern <span class="val" id="sv"></span></label>
+      <input id="s" type="range" min="-20" max="20" step="1">
+      <label for="lmin">Min. Helligkeit (Shade 1000) <span class="val" id="lminv"></span></label>
+      <input id="lmin" type="range" min="0" max="50" step="1">
+      <label for="lmax">Max. Helligkeit (Shade 0) <span class="val" id="lmaxv"></span></label>
+      <input id="lmax" type="range" min="50" max="100" step="1">
+      <label class="chk"><input id="ends" type="checkbox"> Shades 0 und 1000 anzeigen / exportieren</label>
+      <div class="actions">
+        <button class="btn" id="dup">Duplizieren</button>
+        <button class="btn" id="del">Löschen</button>
+      </div>
+    </section>
+
+    <section>
+      <div id="rows"></div>
+      <details class="card sug-wrap" id="sugwrap">
+        <summary class="sug-head"><h3><span aria-hidden="true">🎨</span>Vorschläge für weitere Paletten</h3><span class="sug-sub" id="sugsub"></span></summary>
+        <div id="sug"></div>
+      </details>
+      <div class="card out">
+        <div class="exrow">
+          <div class="acts">
+            <button class="act" id="figma" title="SVG in die Zwischenablage – in Figma mit Strg/Cmd + V einfügen"><svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300" width="12" height="18" aria-hidden="true"><path fill="#0acf83" d="M50 300c27.6 0 50-22.4 50-50v-50H50c-27.6 0-50 22.4-50 50s22.4 50 50 50z"/><path fill="#a259ff" d="M0 150c0-27.6 22.4-50 50-50h50v100H50c-27.6 0-50-22.4-50-50z"/><path fill="#f24e1e" d="M0 50C0 22.4 22.4 0 50 0h50v100H50C22.4 100 0 77.6 0 50z"/><path fill="#ff7262" d="M100 0h50c27.6 0 50 22.4 50 50s-22.4 50-50 50h-50V0z"/><path fill="#1abcfe" d="M200 150c0 27.6-22.4 50-50 50s-50-22.4-50-50 22.4-50 50-50 50 22.4 50 50z"/></svg><span class="t">Als SVG kopieren</span></button>
+            <button class="act" id="ase" title="Swatch-Datei für Adobe Color / Photoshop / Illustrator"><svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 20h16"/></svg><span class="t">ASE herunterladen</span></button>
+          </div>
+          <span class="sep" aria-hidden="true"></span>
+          <div class="tabs" id="tabs"></div>
+        </div>
+        <pre id="code"></pre>
+        <div class="actions"><button class="btn primary" id="copy">Code kopieren</button></div>
+        <p class="hint" id="scope"></p>
+      </div>
+      </section>
+  </div>
+</main>
+<script>
+/* ---------- 12shades-Core: Palette aus einer Basisfarbe (inkl. Shade 25) ---------- */
+const STOPS = [0, 25, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950, 1000];
+// Position in der Originalreihe (0,50,100,...,1000). 25 liegt "dazwischen" (0.5),
+// damit alle bestehenden Stops exakt wie bei tints.dev berechnet werden.
+const STOP_POS = { 0: 0, 25: 0.5, 50: 1, 100: 2, 200: 3, 300: 4, 400: 5, 500: 6, 600: 7, 700: 8, 800: 9, 900: 10, 950: 11, 1000: 12 };
+
+const clamp = (x, a, b) => Math.min(Math.max(x, a), b);
+
+/* --- HEX / RGB / HSL --- */
+function hexToRgb(hex) {
+  const h = hex.replace('#', '');
+  return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
+}
+function rgbToHex(rgb) {
+  return '#' + rgb.map(v => Math.round(clamp(v, 0, 1) * 255).toString(16).padStart(2, '0')).join('').toUpperCase();
+}
+function rgbToHsl([r, g, b]) {
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+  const l = (max + min) / 2;
+  let h = 0, s = 0;
+  if (d !== 0) {
+    s = d / (1 - Math.abs(2 * l - 1));
+    if (max === r) h = ((g - b) / d) % 6;
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60; if (h < 0) h += 360;
+  }
+  return [h, s, l];
+}
+function hslToRgb([h, s, l]) {
+  h = ((h % 360) + 360) % 360;
+  const c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs(((h / 60) % 2) - 1)), m = l - c / 2;
+  let r = 0, g = 0, b = 0;
+  if (h < 60) [r, g, b] = [c, x, 0];
+  else if (h < 120) [r, g, b] = [x, c, 0];
+  else if (h < 180) [r, g, b] = [0, c, x];
+  else if (h < 240) [r, g, b] = [0, x, c];
+  else if (h < 300) [r, g, b] = [x, 0, c];
+  else [r, g, b] = [c, 0, x];
+  return [r + m, g + m, b + m];
+}
+
+/* --- HSLuv (perceptual) --- */
+const M = [[3.240969941904521, -1.537383177570093, -0.498610760293], [-0.96924363628087, 1.87596750150772, 0.041555057407175], [0.055630079696993, -0.20397695888897, 1.056971514242878]];
+const MI = [[0.41239079926595, 0.35758433938387, 0.18048078840183], [0.21263900587151, 0.71516867876775, 0.072192315360733], [0.019330818715591, 0.11919477979462, 0.95053215224966]];
+const REF_U = 0.19783000664283, REF_V = 0.46831999493879, KAPPA = 903.2962962, EPS = 0.0088564516;
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const toLin = c => (c > 0.04045 ? Math.pow((c + 0.055) / 1.055, 2.4) : c / 12.92);
+const fromLin = c => (c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055);
+
+function getBounds(L) {
+  const res = [], sub1 = Math.pow(L + 16, 3) / 1560896, sub2 = sub1 > EPS ? sub1 : L / KAPPA;
+  for (let c = 0; c < 3; c++) {
+    const [m1, m2, m3] = M[c];
+    for (let t = 0; t < 2; t++) {
+      const top1 = (284517 * m1 - 94839 * m3) * sub2;
+      const top2 = (838422 * m3 + 769860 * m2 + 731718 * m1) * L * sub2 - 769860 * t * L;
+      const bottom = (632260 * m3 - 126452 * m2) * sub2 + 126452 * t;
+      res.push([top1 / bottom, top2 / bottom]);
+    }
+  }
+  return res;
+}
+function maxChroma(L, H) {
+  const hr = (H / 360) * Math.PI * 2;
+  let min = Infinity;
+  for (const [slope, icpt] of getBounds(L)) {
+    const len = icpt / (Math.sin(hr) - slope * Math.cos(hr));
+    if (len >= 0) min = Math.min(min, len);
+  }
+  return min;
+}
+function hexToHsluv(hex) {
+  const xyz = MI.map(r => dot(r, hexToRgb(hex).map(toLin)));
+  const [X, Y, Z] = xyz, div = X + 15 * Y + 3 * Z;
+  const L = Y <= EPS ? Y * KAPPA : 116 * Math.cbrt(Y) - 16;
+  if (L === 0) return [0, 0, 0];
+  const U = 13 * L * (4 * X / div - REF_U), V = 13 * L * (9 * Y / div - REF_V);
+  const C = Math.hypot(U, V);
+  let H = C < 1e-8 ? 0 : (Math.atan2(V, U) * 180) / Math.PI; if (H < 0) H += 360;
+  if (L > 99.9999999) return [H, 0, 100];
+  if (L < 1e-8) return [H, 0, 0];
+  return [H, (C / maxChroma(L, H)) * 100, L];
+}
+function hsluvToHex([H, S, L]) {
+  H = ((H % 360) + 360) % 360;
+  let C;
+  if (L > 99.9999999) { L = 100; C = 0; } else if (L < 1e-8) { L = 0; C = 0; } else C = (maxChroma(L, H) / 100) * S;
+  const hr = (H / 180) * Math.PI, U = Math.cos(hr) * C, V = Math.sin(hr) * C;
+  if (L === 0) return '#000000';
+  const vu = U / (13 * L) + REF_U, vv = V / (13 * L) + REF_V;
+  const Y = L <= 8 ? L / KAPPA : Math.pow((L + 16) / 116, 3);
+  const X = 0 - (9 * Y * vu) / ((vu - 4) * vv - vu * vv);
+  const Z = (9 * Y - 15 * vv * Y - vv * X) / (3 * vv);
+  return rgbToHex(M.map(r => fromLin(dot(r, [X, Y, Z]))));
+}
+
+/* --- Palette --- */
+function createSwatches({ value, valueStop = 500, h = 0, s = 0, lMin = 0, lMax = 100, colorMode = 'perceived' }) {
+  const hex = '#' + value.replace('#', '').toUpperCase();
+  if (!/^#[0-9A-F]{6}$/.test(hex)) throw new Error('Ungültiger Hex-Wert');
+  if (!(valueStop in STOP_POS)) throw new Error('Ungültige Shade');
+  const vPos = STOP_POS[valueStop];
+  const linear = colorMode === 'linear';
+  const [bh, bs, bl] = rgbToHsl(hexToRgb(hex));
+  const [uh, us, ul] = hexToHsluv(hex);
+  const baseL = linear ? bl * 100 : ul;
+
+  return STOPS.map(stop => {
+    if (stop === valueStop) return { stop, hex };
+    const diff = Math.abs(STOP_POS[stop] - vPos);
+    const hT = h ? diff * h : 0;
+    const sT = s ? Math.min(Math.round((diff + 1) * s * (1 + diff / 10)), 100) : 0;
+    // Lightness: Anker 0 -> lMax, valueStop -> Basis, 1000 -> lMin, dazwischen linear
+    const [a, b] = stop < valueStop ? [{ x: 0, y: lMax }, { x: valueStop, y: baseL }] : [{ x: valueStop, y: baseL }, { x: 1000, y: lMin }];
+    const lT = clamp(Math.round(a.y + (b.y - a.y) * ((stop - a.x) / (b.x - a.x))), 0, 100);
+    if (linear) return { stop, hex: rgbToHex(hslToRgb([(isNaN(bh) ? 0 : bh) + hT, clamp(bs * 100 + sT, 0, 100) / 100, lT / 100])) };
+    return { stop, hex: hsluvToHex([(isNaN(uh) ? 0 : uh) + hT, clamp(us + sT, 0, 100), lT]) };
+  });
+}
+
+const $ = id => document.getElementById(id);
+const STORE = '12shades:v1';
+const SEEDS = ['1E70F6', 'F97316', '10B981', 'A855F7', 'EC4899', 'EAB308', '06B6D4', 'EF4444'];
+const NAMES = ['brand', 'accent', 'success', 'violet', 'pink', 'warning', 'info', 'danger'];
+const mk = (i, over = {}) => ({ name: NAMES[i % NAMES.length] + (i >= NAMES.length ? '-' + (Math.floor(i / NAMES.length) + 1) : ''), hex: SEEDS[i % SEEDS.length], stop: 500, mode: 'linear', h: 0, s: 0, lMin: 0, lMax: 100, ...over });
+
+let state = { palettes: [mk(0)], active: 0, fmt: 'css', ends: false, showAll: false };
+try { const saved = JSON.parse(localStorage.getItem(STORE) || 'null'); if (saved && saved.palettes && saved.palettes.length) state = { ...state, ...saved }; } catch (e) {}
+let viaLink = false;
+const save = () => { if (viaLink) return; try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} };
+
+const cur = () => state.palettes[state.active];
+const scope = () => (state.showAll && state.palettes.length > 1 ? state.palettes : [cur()]);
+const STOP_CHOICES = STOPS.filter(s => s !== 0 && s !== 1000);
+function encodeState() {
+  const p = state.palettes.map(p => [encodeURIComponent(p.name), String(p.hex).replace('#', '').toUpperCase(), p.stop, p.mode === 'linear' ? 'l' : 'p', p.h, p.s, p.lMin, p.lMax].join(',')).join(';');
+  return '#p=' + p + '&a=' + state.active + (state.showAll ? '&v=all' : '') + (state.ends ? '&e=1' : '');
+}
+function parseHash(hash) {
+  if (!hash || hash.length < 4) return null;
+  const q = {};
+  hash.slice(1).split('&').forEach(kv => { const i = kv.indexOf('='); if (i > 0) q[kv.slice(0, i)] = kv.slice(i + 1); });
+  if (!q.p) return null;
+  const num = (v, a, b, d) => { const n = parseInt(v, 10); return isNaN(n) ? d : Math.min(Math.max(n, a), b); };
+  const palettes = q.p.split(';').slice(0, 24).map((s, i) => {
+    const f = s.split(',');
+    let name; try { name = decodeURIComponent(f[0] || ''); } catch (e) { name = f[0] || ''; }
+    return {
+      name: name.slice(0, 40) || mk(i).name,
+      hex: /^[0-9a-f]{6}$/i.test(f[1] || '') ? f[1].toUpperCase() : SEEDS[0],
+      stop: STOP_CHOICES.includes(+f[2]) ? +f[2] : 500,
+      mode: f[3] === 'l' ? 'linear' : 'perceived',
+      h: num(f[4], -20, 20, 0), s: num(f[5], -20, 20, 0), lMin: num(f[6], 0, 50, 0), lMax: num(f[7], 50, 100, 100),
+    };
+  });
+  return palettes.length ? { palettes, active: num(q.a, 0, palettes.length - 1, 0), showAll: q.v === 'all', ends: q.e === '1' } : null;
+}
+const incoming = parseHash(location.hash);
+if (incoming) { state = { ...state, ...incoming }; viaLink = true; }
+window.addEventListener('hashchange', () => { const inc = parseHash(location.hash); if (inc) { state = { ...state, ...inc }; viaLink = true; render({ controls: true }); } });
+$('stop').innerHTML = STOP_CHOICES.map(s => `<option value="${s}">${s}</option>`).join('');
+
+const lum = hex => { const [r, g, b] = hexToRgb(hex).map(toLin); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+const textOn = hex => ((lum(hex) + 0.05) / 0.05 > 4.5 ? '#000' : '#fff');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const slugOf = n => (String(n).trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '') || 'palette');
+
+// Berechnet alle Paletten; ungültige Eingaben behalten den letzten gültigen Stand
+function compute() {
+  const used = {};
+  state.palettes.forEach(p => {
+    try {
+      p._sw = createSwatches({ value: p.hex.replace('#', ''), valueStop: p.stop, h: p.h, s: p.s, lMin: p.lMin, lMax: p.lMax, colorMode: p.mode });
+      p._ok = true;
+    } catch (e) { p._ok = false; }
+    let slug = slugOf(p.name), n = used[slug] = (used[slug] || 0) + 1;
+    p._slug = n > 1 ? `${slug}-${n}` : slug;
+  });
+}
+const visible = p => (p._sw || []).filter(s => state.ends || (s.stop !== 0 && s.stop !== 1000));
+
+/* ---------- Exporte ---------- */
+function svgExport() {
+  const W = 96, H = 80, GAP = 8, TITLE = 30, ROWGAP = 28, FONT = 'Inter, Arial, sans-serif';
+  const cols = Math.max(...scope().map(p => visible(p).length));
+  const width = cols * (W + GAP) - GAP;
+  const rowH = TITLE + H;
+  const height = scope().length * rowH + (scope().length - 1) * ROWGAP;
+  let body = '';
+  scope().forEach((p, r) => {
+    const y0 = r * (rowH + ROWGAP);
+    body += `<g id="${esc(p._slug)}"><text id="${esc(p._slug)}-titel" x="0" y="${y0 + 16}" font-family="${FONT}" font-size="16" font-weight="700" fill="#1C1917">${esc(p.name)}</text>`;
+    visible(p).forEach((s, i) => {
+      const x = i * (W + GAP), y = y0 + TITLE, fg = textOn(s.hex) === '#000' ? '#000000' : '#FFFFFF';
+      body += `<g id="${esc(p._slug)}-${s.stop}"><rect id="${esc(p._slug)}-${s.stop}-farbe" x="${x}" y="${y}" width="${W}" height="${H}" rx="8" fill="${s.hex}"/>`
+        + `<text x="${x + 10}" y="${y + 24}" font-family="${FONT}" font-size="14" font-weight="700" fill="${fg}">${s.stop}</text>`
+        + `<text x="${x + 10}" y="${y + H - 12}" font-family="${FONT}" font-size="12" fill="${fg}">${s.hex}</text></g>`;
+    });
+    body += '</g>';
+  });
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${body}</svg>`;
+}
+const each = fn => scope().map(p => fn(p, visible(p))).join('\n\n');
+const FORMATS = {
+  css:  ['CSS-Variablen', () => `:root {\n${scope().map(p => visible(p).map(s => `  --${p._slug}-${s.stop}: ${s.hex.toLowerCase()};`).join('\n')).join('\n\n')}\n}`],
+  tw4:  ['Tailwind v4', () => `@theme {\n${scope().map(p => visible(p).map(s => `  --color-${p._slug}-${s.stop}: ${s.hex.toLowerCase()};`).join('\n')).join('\n\n')}\n}`],
+  tw3:  ['Tailwind v3', () => `// tailwind.config.js → theme.extend.colors\n{\n${scope().map(p => `  '${p._slug}': {\n${visible(p).map(s => `    ${s.stop}: '${s.hex.toLowerCase()}',`).join('\n')}\n  },`).join('\n')}\n}`],
+  json: ['JSON', () => JSON.stringify(Object.fromEntries(scope().map(p => [p._slug, Object.fromEntries(visible(p).map(s => [s.stop, s.hex.toLowerCase()]))])), null, 2)],
+};
+
+/* ---------- ASE (Adobe Swatch Exchange) ---------- */
+function aseBytes() {
+  const blocks = [];
+  const utf16 = (str) => { const a = []; for (const ch of str) a.push(ch.charCodeAt(0)); a.push(0); return a; };
+  const u16 = n => [(n >> 8) & 255, n & 255];
+  const u32 = n => [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255];
+  const f32 = x => { const b = new DataView(new ArrayBuffer(4)); b.setFloat32(0, x, false); return [0, 1, 2, 3].map(i => b.getUint8(i)); };
+  const nameBytes = str => { const c = utf16(str); return [...u16(c.length), ...c.flatMap(u16)]; };
+  scope().forEach(p => {
+    const sw = visible(p); if (!sw.length) return;
+    const gn = nameBytes(p.name || p._slug);
+    blocks.push([...u16(0xC001), ...u32(gn.length), ...gn]);
+    sw.forEach(s => {
+      const body = [...nameBytes(p._slug + '-' + s.stop), 82, 71, 66, 32, ...hexToRgb(s.hex).flatMap(f32), ...u16(2)];
+      blocks.push([...u16(0x0001), ...u32(body.length), ...body]);
+    });
+    blocks.push([...u16(0xC002), ...u32(0)]);
+  });
+  return new Uint8Array([65, 83, 69, 70, ...u16(1), ...u16(0), ...u32(blocks.length), ...blocks.flat()]);
+}
+function downloadAse(btn) {
+  const t = btn.querySelector('.t'), label = t.textContent;
+  try {
+    const url = URL.createObjectURL(new Blob([aseBytes()], { type: 'application/octet-stream' }));
+    const a = document.createElement('a'); a.href = url; a.download = '12shades.ase';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+    t.textContent = window.self !== window.top ? 'In Vorschau evtl. gesperrt' : 'Download gestartet ✓';
+  } catch (e) { t.textContent = 'Download nicht möglich'; }
+  setTimeout(() => (t.textContent = label), 1800);
+}
+
+/* ---------- Rendern ---------- */
+const HARMONIES = [
+  { title: 'Komplementär', desc: 'Gegenüber auf dem Farbkreis (180°): maximaler Kontrast.', items: [[180, 'complement']] },
+  { title: 'Analog', desc: 'Direkte Nachbarn (±30°): ruhig und harmonisch.', items: [[-30, 'analogous-1'], [30, 'analogous-2']] },
+  { title: 'Split-Komplementär', desc: 'Nachbarn der Komplementärfarbe (±150°): Kontrast, aber weicher.', items: [[150, 'split-1'], [210, 'split-2']] },
+  { title: 'Triade', desc: 'Drei gleichmäßig verteilte Farben (120°).', items: [[120, 'triad-1'], [240, 'triad-2']] },
+  { title: 'Tetrade (Rechteck)', desc: 'Zwei Komplementärpaare (60°, 180°, 240°): viel Auswahl, schwerer auszubalancieren.', items: [[60, 'tetrad-1'], [180, 'tetrad-2'], [240, 'tetrad-3']] },
+  { title: 'Quadrat', desc: 'Vier gleichmäßig verteilte Farben (90°).', items: [[90, 'square-1'], [180, 'square-2'], [270, 'square-3']] },
+  { title: 'Neutral', desc: 'Leicht getönter Grauton in der Farbe deiner Basis: für Text, Flächen und Rahmen.', items: [[0, 'neutral']] },
+];
+// Farbton drehen: im Modus "Linear" in HSL, im Modus "Perceived" in HSLuv (wie die Palettenberechnung selbst)
+function rotateHex(hex, deg, mode, neutral) {
+  const H = '#' + hex.replace('#', '').toUpperCase();
+  if (mode === 'perceived') { const [hh, s, l] = hexToHsluv(H); return neutral ? hsluvToHex([hh, 12, 50]) : hsluvToHex([hh + deg, s, l]); }
+  const [hh, s, l] = rgbToHsl(hexToRgb(H)); return rgbToHex(hslToRgb(neutral ? [hh, 0.1, 0.5] : [hh + deg, s, l]));
+}
+function buildSuggestions() {
+  const a = cur(); if (!a._ok) return null;
+  const gray = rgbToHsl(hexToRgb('#' + a.hex.replace('#', '')))[1] < 0.06;
+  return HARMONIES.filter(g => !(gray && g.title !== 'Neutral')).map(g => ({
+    title: g.title, desc: g.desc,
+    items: g.items.map(([deg, name]) => {
+      const neutral = name === 'neutral';
+      return { deg, name, neutral, hex: rotateHex(a.hex, deg, a.mode, neutral), stop: neutral ? 500 : a.stop };
+    }),
+  }));
+}
+const uniqueName = base => { let n = base, i = 2; while (state.palettes.some(p => p.name === n)) n = base + '-' + i++; return n; };
+const hasHex = hex => state.palettes.some(p => p.hex.replace('#', '').toUpperCase() === hex.replace('#', '').toUpperCase());
+function addSuggestion(s) {
+  if (hasHex(s.hex)) return false;
+  const a = cur();
+  state.palettes.push({ name: uniqueName(s.name), hex: s.hex.replace('#', ''), stop: s.stop, mode: a.mode, h: s.neutral ? 0 : a.h, s: s.neutral ? 0 : a.s, lMin: a.lMin, lMax: a.lMax });
+  return true;
+}
+function renderSuggestions() {
+  const groups = buildSuggestions(); const a = cur();
+  $('sugsub').textContent = groups ? `Basis: ${a.name} · #${a.hex.replace('#', '').toUpperCase()}` : '';
+  if (!$('sugwrap').open) { $('sug').innerHTML = ''; return; }
+  if (!groups) { $('sug').innerHTML = '<div class="sug-note">Bitte zuerst eine gültige Basisfarbe eingeben.</div>'; return; }
+  const gray = groups.length === 1;
+  $('sug').innerHTML = (gray ? '<div class="sug-note">Die Basisfarbe ist (fast) grau, deshalb gibt es keine Farbton-Vorschläge. Mit einer farbigen Basis erscheinen hier Komplementär, Analog, Triade und mehr.</div>' : '') + groups.map((g, gi) => {
+    const pending = g.items.filter(it => !hasHex(it.hex)).length;
+    const chips = g.items.map((it, ii) => {
+      const sw = createSwatches({ value: it.hex.replace('#', ''), valueStop: it.stop, h: it.neutral ? 0 : a.h, s: it.neutral ? 0 : a.s, lMin: a.lMin, lMax: a.lMax, colorMode: a.mode }).filter(x => x.stop !== 0 && x.stop !== 1000);
+      const added = hasHex(it.hex);
+      return `<button class="chip${added ? ' added' : ''}" data-g="${gi}" data-i="${ii}" ${added ? 'disabled' : ''} title="${added ? 'Bereits als Palette vorhanden' : 'Als neue Palette hinzufügen'}"><div class="strip">${sw.map(x => `<i style="background:${x.hex}"></i>`).join('')}</div><div class="meta"><b>${added ? '✓ hinzugefügt' : (it.neutral ? 'Neutral' : (it.deg > 0 ? '+' : '') + it.deg + '°')}</b><span>${it.hex}</span></div></button>`;
+    }).join('');
+    return `<div class="sug-group"><div><div class="sug-title">${g.title}</div><div class="sug-desc">${g.desc}</div>${g.items.length > 1 ? `<button class="sug-all" data-all="${gi}" ${pending ? '' : 'disabled'}>${pending ? (pending === g.items.length ? 'Alle hinzufügen' : 'Rest hinzufügen') : 'Alle hinzugefügt'}</button>` : ''}</div><div class="sug-chips">${chips}</div></div>`;
+  }).join('');
+}
+function renderEditSel() {
+  const show = state.showAll && state.palettes.length > 1;
+  $('editsel').hidden = !show;
+  $('namelabel').classList.toggle('first', !show);
+  if (!show) return;
+  $('editpal').innerHTML = state.palettes.map((p, i) => `<option value="${i}"${i === state.active ? ' selected' : ''}>${esc(p.name || 'Palette')}</option>`).join('');
+}
+function renderPals() {
+  const all = state.palettes.length > 1 ? `<button class="pal" id="all" aria-pressed="${state.showAll}">Alle <small>${state.palettes.length}</small></button>` : '';
+  $('pals').innerHTML = all + state.palettes.map((p, i) => `<button class="pal" data-i="${i}" aria-pressed="${i === state.active && !state.showAll}"><i style="background:#${p.hex.replace('#', '')}"></i>${esc(p.name || 'Palette')}</button>`).join('') + `<button class="btn" id="add">+ Palette</button><button class="btn share" id="share">Link kopieren</button>`;
+}
+function renderRows() {
+  $('rows').innerHTML = scope().map(p => {
+    const i = state.palettes.indexOf(p);
+    const tiles = visible(p).map(s => `<button class="sw${s.stop === p.stop ? ' base' : ''}" data-hex="${s.hex}" title="${s.stop} · ${s.hex}${s.stop === p.stop ? ' (Basisfarbe)' : ''}" style="background:${s.hex};color:${textOn(s.hex)}" aria-label="${esc(p.name)} ${s.stop}, ${s.hex} kopieren"><b>${s.stop}</b><span>${s.hex}</span></button>`).join('');
+    return `<div class="prow${state.showAll && i === state.active ? ' active' : ''}"><h3 data-i="${i}"><span>${esc(p.name)}</span><small>${p.mode === 'linear' ? 'Linear' : 'Perceived'}</small></h3><div class="swatches" style="--n:${visible(p).length}">${tiles}</div></div>`;
+  }).join('');
+}
+function renderCode() {
+  if (!FORMATS[state.fmt]) state.fmt = 'css';
+  const [, fn] = FORMATS[state.fmt];
+  $('code').textContent = fn();
+  const n = scope().length;
+  $('scope').textContent = n > 1 ? `Export enthält alle ${n} Paletten.` : `Export enthält nur „${cur().name}“.`;
+  $('tabs').innerHTML = Object.entries(FORMATS).map(([k, [label]]) => `<button data-k="${k}" aria-pressed="${k === state.fmt}">${label}</button>`).join('');
+}
+function syncControls() {
+  const p = cur();
+  $('name').value = p.name; $('hex').value = p.hex.replace('#', ''); $('picker').value = '#' + p.hex.replace('#', '').toLowerCase();
+  $('stop').value = p.stop; $('h').value = p.h; $('s').value = p.s; $('lmin').value = p.lMin; $('lmax').value = p.lMax; $('ends').checked = state.ends;
+  [...$('mode').children].forEach(b => b.setAttribute('aria-pressed', b.dataset.v === p.mode));
+  $('del').disabled = state.palettes.length < 2;
+  showValues();
+}
+function showValues() { [['h', 'hv'], ['s', 'sv'], ['lmin', 'lminv'], ['lmax', 'lmaxv']].forEach(([a, b]) => ($(b).textContent = $(a).value)); }
+function render({ controls = false } = {}) {
+  if (state.palettes.length < 2) state.showAll = false;
+  compute();
+  $('err').textContent = cur()._ok ? '' : 'Bitte 6-stelligen Hex-Wert eingeben (z. B. 1E70F6)';
+  if (controls) syncControls();
+  renderPals(); renderRows(); renderSuggestions(); renderEditSel(); renderCode(); save();
+}
+
+/* ---------- Kopieren & „Kopiert“-Anzeige ---------- */
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch (e) {}
+  try { const t = document.createElement('textarea'); t.value = text; t.style.position = 'fixed'; t.style.opacity = '0'; document.body.appendChild(t); t.select(); const ok = document.execCommand('copy'); t.remove(); return ok; } catch (e) { return false; }
+}
+function clearCopied() {
+  document.querySelectorAll('.sw.copied').forEach(el => { el.classList.remove('copied'); el.querySelector('span').textContent = el.dataset.hex; });
+}
+// Jeder Klick irgendwo setzt die Anzeige zurück (Capture-Phase, läuft vor allen anderen Handlern)
+document.addEventListener('click', clearCopied, true);
+$('rows').addEventListener('click', async e => {
+  const tile = e.target.closest('.sw');
+  if (tile) {
+    if (await copyText(tile.dataset.hex)) { tile.classList.add('copied'); tile.querySelector('span').textContent = 'Kopiert ✓'; }
+    return;
+  }
+  const h = e.target.closest('h3[data-i]');
+  if (h) { state.active = +h.dataset.i; render({ controls: true }); }
+});
+async function flash(btn, text, label) { const ok = await copyText(text); btn.textContent = ok ? 'Kopiert ✓' : 'Kopieren nicht möglich'; setTimeout(() => (btn.textContent = label), 1500); }
+$('copy').addEventListener('click', e => flash(e.currentTarget, $('code').textContent, 'Code kopieren'));
+$('figma').addEventListener('click', async e => {
+  const t = e.currentTarget.querySelector('.t'); const ok = await copyText(svgExport());
+  t.textContent = ok ? 'Kopiert ✓' : 'Kopieren nicht möglich';
+  setTimeout(() => (t.textContent = 'Für Figma kopieren'), 2200);
+});
+$('ase').addEventListener('click', e => downloadAse(e.currentTarget));
+
+/* ---------- Eingaben ---------- */
+const bind = (id, key, conv = v => v) => $(id).addEventListener('input', e => { cur()[key] = conv(e.target.value); showValues(); render(); });
+bind('name', 'name'); bind('h', 'h', Number); bind('s', 's', Number); bind('lmin', 'lMin', Number); bind('lmax', 'lMax', Number); bind('stop', 'stop', Number);
+$('hex').addEventListener('input', e => { cur().hex = e.target.value.replace('#', '').trim(); const ok = /^[0-9a-f]{6}$/i.test(cur().hex); if (ok) $('picker').value = '#' + cur().hex.toLowerCase(); render(); });
+$('picker').addEventListener('input', e => { cur().hex = e.target.value.slice(1).toUpperCase(); $('hex').value = cur().hex; render(); });
+$('ends').addEventListener('change', e => { state.ends = e.target.checked; render(); });
+$('mode').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; cur().mode = b.dataset.v; render({ controls: true }); });
+$('sugwrap').addEventListener('toggle', renderSuggestions);
+$('sug').addEventListener('click', e => {
+  const groups = buildSuggestions(); if (!groups) return;
+  const all = e.target.closest('[data-all]'), chip = e.target.closest('.chip[data-g]');
+  let changed = false;
+  if (all) groups[+all.dataset.all].items.forEach(it => { changed = addSuggestion(it) || changed; });
+  else if (chip) changed = addSuggestion(groups[+chip.dataset.g].items[+chip.dataset.i]);
+  if (changed) render();
+});
+$('editpal').addEventListener('change', e => { state.active = +e.target.value; render({ controls: true }); });
+$('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.fmt = b.dataset.k; render(); });
+$('pals').addEventListener('click', async e => {
+  const sh = e.target.closest('#share');
+  if (sh) {
+    const url = location.href.split('#')[0] + encodeState();
+    const ok = await copyText(url);
+    sh.textContent = ok ? 'Link kopiert ✓' : 'Kopieren nicht möglich';
+    setTimeout(() => { const b = $('share'); if (b) b.textContent = 'Link kopieren'; }, 1800);
+    return;
+  }
+  if (e.target.closest('#add')) { state.palettes.push(mk(state.palettes.length)); state.active = state.palettes.length - 1; state.showAll = false; return render({ controls: true }); }
+  if (e.target.closest('#all')) { state.showAll = true; return render({ controls: true }); }
+  const b = e.target.closest('.pal[data-i]'); if (b) { state.active = +b.dataset.i; state.showAll = false; render({ controls: true }); }
+});
+$('dup').addEventListener('click', () => { const c = { ...cur() }; delete c._sw; delete c._ok; delete c._slug; c.name += '-kopie'; state.palettes.splice(state.active + 1, 0, c); state.active++; render({ controls: true }); });
+$('del').addEventListener('click', () => { if (state.palettes.length < 2) return; state.palettes.splice(state.active, 1); state.active = Math.max(0, state.active - 1); render({ controls: true }); });
+
+state.active = Math.min(state.active, state.palettes.length - 1);
+render({ controls: true });
+</script>
+</body>
+</html>
