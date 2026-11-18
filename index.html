@@ -54,6 +54,7 @@
   .swatches { container-type:inline-size; display:grid; grid-template-columns: repeat(var(--n, 12), minmax(0, 1fr)); gap:6px; }
   .sw { --w: calc(100cqw / var(--n, 12) - 6px); min-width:0; overflow:hidden; border-radius:clamp(6px, calc(var(--w) * .11), 12px); padding:0; display:flex; flex-direction:column; align-items:stretch; text-align:left; cursor:pointer; border:1px solid var(--line); background:var(--card); color:var(--fg); font:inherit; font-variant-numeric: tabular-nums; position:relative; }
   .sw .top { display:flex; flex-direction:column; justify-content:space-between; align-items:flex-end; min-height:calc(var(--w) * .95); padding:clamp(4px, calc(var(--w) * .1), 10px); }
+  .sw.base { box-shadow: 0 4px 14px rgba(0,0,0,.14); }
   .sw .ci { width:clamp(10px, calc(var(--w) * .22), 22px); height:clamp(10px, calc(var(--w) * .22), 22px); display:block; }
   .sw .ci svg { width:100%; height:100%; display:block; }
   .sw .ci .ck { display:none; }
@@ -62,7 +63,7 @@
   .sw .top em { font-style:normal; align-self:flex-start; white-space:nowrap; font-size:clamp(8px, calc(var(--w) * .13), 14px); }
   .sw .bot { display:flex; flex-direction:column; gap:1px; padding:clamp(4px, calc(var(--w) * .1), 10px); }
   .sw .bot b { font-size:clamp(10px, calc(var(--w) * .19), 17px); line-height:1.2; font-weight:500; }
-  .sw .bot span { font-size:clamp(9px, calc(var(--w) * .15), 15px); white-space:nowrap; font-family: ui-monospace, Menlo, monospace; color:color-mix(in srgb, var(--mut) 75%, var(--card)); }
+  .sw .bot span { font-size:clamp(8.5px, calc(var(--w) * .135), 14px); white-space:nowrap; font-family: ui-monospace, Menlo, monospace; color:color-mix(in srgb, var(--mut) 75%, var(--card)); }
   @container (max-width: 520px) { .sw .top { min-height:44px; } .sw .top em { display:none; } .sw .bot { align-items:center; padding:6px 2px; } .sw .bot span { writing-mode:vertical-rl; font-size:10px; } }
   .out { margin-top:8px; }
   .tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
@@ -487,7 +488,7 @@ function renderRows() {
   $('rows').innerHTML = scope().map(p => {
     const i = state.palettes.indexOf(p);
     const tiles = visible(p).map(s => `<button class="sw${s.stop === p.stop ? ' base' : ''}" data-hex="${s.hex}" title="${s.stop} · ${s.hex}${s.stop === p.stop ? ' (Basisfarbe)' : ''}" aria-label="${esc(p.name)} ${s.stop}, ${s.hex} kopieren"><span class="top" style="background:${s.hex};color:${textOn(s.hex)}"><i class="ci">${ICON_COPY}${ICON_CHECK}</i><em>${contrastLabel(s.hex)}</em></span><span class="bot"><b>${s.stop}</b><span>${s.hex}</span></span></button>`).join('');
-    return `<div class="prow${state.showAll && i === state.active ? ' active' : ''}"><h3 data-i="${i}"><span>${esc(p.name)}</span><small>${p.mode === 'linear' ? 'Linear' : 'Perceived'}</small></h3><div class="swatches" style="--n:${visible(p).length};grid-template-columns:${visible(p).map(s => s.stop === p.stop ? '1.7fr' : '1fr').join(' ')}">${tiles}</div></div>`;
+    return `<div class="prow${state.showAll && i === state.active ? ' active' : ''}"><h3 data-i="${i}"><span>${esc(p.name)}</span><small>${p.mode === 'linear' ? 'Linear' : 'Perceived'}</small></h3><div class="swatches" style="--n:${visible(p).length};grid-template-columns:${visible(p).map(s => s.stop === p.stop ? '1.5fr' : '1fr').join(' ')}">${tiles}</div></div>`;
   }).join('');
 }
 function renderCode() {
