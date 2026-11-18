@@ -103,7 +103,7 @@
   .out { margin-top:8px; }
   .tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
   .tabs button { padding:5px 10px; border:1px solid var(--line); border-radius:999px; background:transparent; color:inherit; font:inherit; font-size:13px; cursor:pointer; }
-  .tabs button[aria-pressed=true] { background:var(--acc); color:var(--bg); border-color:var(--acc); }
+  .out:has(#codewrap[open]) .tabs button[aria-pressed=true] { background:var(--acc); color:var(--bg); border-color:var(--acc); }
   pre { margin:0; padding:14px; border-radius:10px; background:var(--bg); border:1px solid var(--line); overflow:auto; font:12.5px/1.6 ui-monospace, Menlo, monospace; max-height:340px; }
   .exrow { display:flex; align-items:center; gap:12px; margin-bottom:10px; flex-wrap:wrap; }
   .out { container-type:inline-size; }
