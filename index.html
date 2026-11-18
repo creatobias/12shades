@@ -9,7 +9,7 @@
   @media (prefers-color-scheme: dark) { :root { --bg:#141210; --fg:#f5f5f4; --mut:#a8a29e; --line:#2e2a27; --card:#1c1917; --acc:#f5f5f4; } }
   * { box-sizing: border-box; }
   body { margin:0; font:15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg); color:var(--fg); }
-  main { max-width: 1360px; margin: 0 auto; padding: 32px 20px 64px; }
+  main { max-width: 1440px; margin: 0 auto; padding: 32px 20px 64px; }
   h1 { font-size: 24px; margin: 0 0 20px; letter-spacing: -.01em; }
   p.sub { color: var(--mut); margin: 0 0 20px; }
   .grid { display:grid; grid-template-columns: 300px 1fr; gap: 24px; align-items:start; }
@@ -54,7 +54,7 @@
   .sw.copied .ci .ck { display:block; }
   .sw .top em { font-style:normal; align-self:flex-start; white-space:nowrap; font-size:clamp(8px, calc(var(--w) * .13), 14px); }
   .sw .bot { display:flex; flex-direction:column; gap:1px; padding:clamp(4px, calc(var(--w) * .1), 10px); }
-  .sw .bot b { font-size:clamp(10px, calc(var(--w) * .19), 17px); line-height:1.2; }
+  .sw .bot b { font-size:clamp(10px, calc(var(--w) * .19), 17px); line-height:1.2; font-weight:600; }
   .sw .bot span { font-size:clamp(9px, calc(var(--w) * .15), 15px); white-space:nowrap; font-family: ui-monospace, Menlo, monospace; color:var(--mut); }
   @container (max-width: 520px) { .sw .top { min-height:44px; } .sw .top em { display:none; } .sw .bot { align-items:center; padding:6px 2px; } .sw .bot span { writing-mode:vertical-rl; font-size:10px; } }
   .out { margin-top:8px; }
@@ -473,7 +473,7 @@ function renderRows() {
   $('rows').innerHTML = scope().map(p => {
     const i = state.palettes.indexOf(p);
     const tiles = visible(p).map(s => `<button class="sw${s.stop === p.stop ? ' base' : ''}" data-hex="${s.hex}" title="${s.stop} · ${s.hex}${s.stop === p.stop ? ' (Basisfarbe)' : ''}" aria-label="${esc(p.name)} ${s.stop}, ${s.hex} kopieren"><span class="top" style="background:${s.hex};color:${textOn(s.hex)}"><i class="ci">${ICON_COPY}${ICON_CHECK}</i><em>${contrastLabel(s.hex)}</em></span><span class="bot"><b>${s.stop}</b><span>${s.hex}</span></span></button>`).join('');
-    return `<div class="prow${state.showAll && i === state.active ? ' active' : ''}"><h3 data-i="${i}"><span>${esc(p.name)}</span><small>${p.mode === 'linear' ? 'Linear' : 'Perceived'}</small></h3><div class="swatches" style="--n:${visible(p).length};grid-template-columns:${visible(p).map(s => s.stop === p.stop ? '1.4fr' : '1fr').join(' ')}">${tiles}</div></div>`;
+    return `<div class="prow${state.showAll && i === state.active ? ' active' : ''}"><h3 data-i="${i}"><span>${esc(p.name)}</span><small>${p.mode === 'linear' ? 'Linear' : 'Perceived'}</small></h3><div class="swatches" style="--n:${visible(p).length};grid-template-columns:${visible(p).map(s => s.stop === p.stop ? '1.7fr' : '1fr').join(' ')}">${tiles}</div></div>`;
   }).join('');
 }
 function renderCode() {
