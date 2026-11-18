@@ -10,7 +10,8 @@
   * { box-sizing: border-box; }
   body { margin:0; font:15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg); color:var(--fg); }
   main { max-width: 1360px; margin: 0 auto; padding: 32px 20px 64px; }
-  h1 { font-size: 24px; margin: 0 0 48px; letter-spacing: -.01em; }
+  .pagehead { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:48px; }
+  h1 { font-size: 24px; margin: 0; letter-spacing: -.01em; }
   p.sub { color: var(--mut); margin: 0 0 20px; }
   .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; }
   label { display:block; font-size:13px; font-weight:500; color:var(--mut); margin: 14px 0 4px; }
@@ -19,6 +20,7 @@
   .core { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:14px 20px; align-items:start; }
   .core label, .tune-grid label { margin:0 0 4px; }
   .core .err { min-height:0; margin-top:4px; }
+  .core .dis { opacity:.4; pointer-events:none; }
   .core .err:empty { display:none; }
   .codewrap { margin-top:14px; padding-top:12px; border-top:1px solid var(--line); }
   .tune { margin-top:16px; padding-top:14px; border-top:1px solid var(--line); }
@@ -47,12 +49,22 @@
   .chk input[type=checkbox]:focus-visible { outline:2px solid var(--acc); outline-offset:2px; }
   .err { color:#dc2626; font-size:13px; min-height:18px; margin-top:6px; }
   /* Palettenleiste */
-  .pals { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; align-items:center; }
-  .pal { display:flex; align-items:center; gap:8px; padding:6px 12px 6px 8px; border:1px solid var(--line); border-radius:999px; background:var(--card); color:inherit; font:inherit; font-size:14px; cursor:pointer; }
-  .pal i { width:16px; height:16px; border-radius:50%; border:1px solid rgba(0,0,0,.15); }
-  .pal[aria-pressed=true] { border-color:var(--acc); box-shadow: 0 0 0 1px var(--acc); }
+  .settings-grid { display:grid; grid-template-columns: 200px minmax(0, 1fr); gap:24px; align-items:start; }
+  .pals { display:flex; flex-direction:column; gap:2px; padding-right:16px; border-right:1px solid var(--line); align-self:stretch; }
+  .pal { display:flex; align-items:center; gap:8px; width:100%; padding:8px 10px; border:0; border-radius:8px; background:transparent; color:inherit; font:inherit; font-size:14px; text-align:left; cursor:pointer; }
+  .pal:hover { background:var(--bg); }
+  .pal .n { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pal i { flex:none; width:14px; height:14px; border-radius:50%; border:1px solid rgba(0,0,0,.15); }
+  .pal[aria-pressed=true] { background:var(--bg); font-weight:600; box-shadow: inset 3px 0 0 var(--acc); }
+  .pal.add { color:var(--mut); }
+  .pals-actions { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; padding-top:12px; border-top:1px solid var(--line); }
+  @media (max-width: 860px) {
+    .settings-grid { grid-template-columns: 1fr; gap:16px; }
+    .pals { flex-direction:row; flex-wrap:wrap; align-items:center; padding:0 0 14px; border-right:0; border-bottom:1px solid var(--line); }
+    .pal { width:auto; }
+    .pals-actions { margin:0 0 0 auto; padding:0; border:0; }
+  }
   .actions { display:flex; gap:6px; margin-top:16px; flex-wrap:wrap; }
-  .palsep { width:1px; height:22px; background:var(--line); margin:0 4px; }
   /* Paletten-Zeilen */
   .prow { margin-bottom:18px; padding:10px; border-radius:12px; border:1px solid transparent; }
   .prow.active { border-color:var(--line); background:var(--card); }
@@ -60,8 +72,9 @@
   .prow h3 small { color:var(--mut); font-weight:400; }
   .swatches { container-type:inline-size; display:grid; grid-template-columns: repeat(var(--n, 12), minmax(0, 1fr)); gap:6px; }
   .sw { --w: calc(100cqw / var(--n, 12) - 6px); min-width:0; overflow:hidden; border-radius:clamp(6px, calc(var(--w) * .11), 12px); padding:0; display:flex; flex-direction:column; align-items:stretch; text-align:left; cursor:pointer; border:1px solid var(--line); background:var(--card); color:var(--fg); font:inherit; font-variant-numeric: tabular-nums; position:relative; }
-  .sw .top { display:flex; flex-direction:column; justify-content:space-between; align-items:flex-end; min-height:calc(var(--w) * .95); padding:clamp(4px, calc(var(--w) * .1), 10px); }
+  .sw .top { display:flex; flex-direction:column; justify-content:space-between; align-items:flex-end; aspect-ratio:1 / .95; padding:clamp(4px, calc(var(--w) * .1), 10px); }
   .sw.base { box-shadow: 0 4px 14px rgba(0,0,0,.14); }
+  .sw.base .top { aspect-ratio: 1.5 / .95; }
   .sw .ci { width:clamp(9px, calc(var(--w) * .17), 18px); height:clamp(9px, calc(var(--w) * .17), 18px); display:block; }
   .sw .ci svg { width:100%; height:100%; display:block; }
   .sw .ci { opacity:0; transition:opacity .12s; }
@@ -74,7 +87,7 @@
   .sw .bot { display:flex; flex-direction:column; gap:3px; padding:clamp(4px, calc(var(--w) * .1), 10px); }
   .sw .bot b { font-size:clamp(10px, calc(var(--w) * .19), 17px); line-height:1.2; font-weight:400; }
   .sw .bot span { font-size:clamp(8px, calc(var(--w) * .12), 13px); white-space:nowrap; font-family: ui-monospace, Menlo, monospace; color:color-mix(in srgb, var(--mut) 75%, var(--card)); }
-  @container (max-width: 520px) { .sw .top { min-height:44px; } .sw .top em { display:none; } .sw .bot { align-items:center; padding:6px 2px; } .sw .bot span { writing-mode:vertical-rl; font-size:10px; } }
+  @container (max-width: 520px) { .sw .top, .sw.base .top { aspect-ratio:auto; min-height:44px; } .sw .top em { display:none; } .sw .bot { align-items:center; padding:6px 2px; } .sw .bot span { writing-mode:vertical-rl; font-size:10px; } }
   .out { margin-top:8px; }
   .tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
   .tabs button { padding:5px 10px; border:1px solid var(--line); border-radius:999px; background:transparent; color:inherit; font:inherit; font-size:13px; cursor:pointer; }
@@ -91,7 +104,6 @@
   .act:hover { background:var(--card); }
   .act .ico { flex:none; }
   pre { margin-top:14px; }
-  .share { margin-left:auto; }
   .pal small { color:var(--mut); font-size:12px; }
   .hint { font-size:12.5px; color:var(--mut); margin:8px 0 0; }
   .sug-wrap { margin-bottom:16px; }
@@ -122,19 +134,16 @@
 </head>
 <body>
 <main>
-  <h1>12shades</h1>
-
-  <div class="pals" id="pals"></div>
+  <header class="pagehead"><h1>12shades</h1><button class="btn" id="share">Link kopieren</button></header>
 
   <div>
     <section class="card settings">
+      <div class="settings-grid">
+      <nav class="pals" id="pals" aria-label="Paletten"></nav>
+      <div class="settings-main">
       <div class="core">
-        <div id="editsel" hidden>
-          <label for="editpal">Palette bearbeiten</label>
-          <select id="editpal"></select>
-        </div>
         <div>
-          <label id="namelabel" for="name">Name</label>
+          <label for="name">Name</label>
           <input id="name" type="text" spellcheck="false">
         </div>
         <div>
@@ -160,6 +169,8 @@
           <div><label for="lmax">Max. Helligkeit (Shade 0) <span class="val" id="lmaxv"></span></label><input id="lmax" type="range" min="50" max="100" step="1"></div>
         </div>
       </details>
+      </div>
+      </div>
     </section>
 
     <section>
@@ -327,6 +338,9 @@ let viaLink = false;
 const save = () => { if (viaLink) return; try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} };
 
 const cur = () => state.palettes[state.active];
+const bulk = () => state.showAll && state.palettes.length > 1;
+const targets = () => (bulk() ? state.palettes : [cur()]);
+const mixed = key => bulk() && state.palettes.some(p => p[key] !== cur()[key]);
 const scope = () => (state.showAll && state.palettes.length > 1 ? state.palettes : [cur()]);
 const STOP_CHOICES = STOPS.filter(s => s !== 0 && s !== 1000);
 function encodeState() {
@@ -490,22 +504,16 @@ function renderSuggestions() {
     return `<div class="sug-group"><div><div class="sug-title">${g.title}</div><div class="sug-desc">${g.desc}</div>${g.items.length > 1 ? `<button class="sug-all" data-all="${gi}" ${pending ? '' : 'disabled'}>${pending ? (pending === g.items.length ? 'Alle hinzufügen' : 'Rest hinzufügen') : 'Alle hinzugefügt'}</button>` : ''}</div><div class="sug-chips">${chips}</div></div>`;
   }).join('');
 }
-function renderEditSel() {
-  const show = state.showAll && state.palettes.length > 1;
-  $('editsel').hidden = !show;
-  $('namelabel').classList.toggle('first', !show);
-  if (!show) return;
-  $('editpal').innerHTML = state.palettes.map((p, i) => `<option value="${i}"${i === state.active ? ' selected' : ''}>${esc(p.name || 'Palette')}</option>`).join('');
-}
 function renderPals() {
-  const all = state.palettes.length > 1 ? `<button class="pal" id="all" aria-pressed="${state.showAll}">Alle <small>${state.palettes.length}</small></button>` : '';
-  $('pals').innerHTML = all + state.palettes.map((p, i) => `<button class="pal" data-i="${i}" aria-pressed="${i === state.active && !state.showAll}"><i style="background:#${p.hex.replace('#', '')}"></i>${esc(p.name || 'Palette')}</button>`).join('') + `<button class="btn" id="add">+ Palette</button><span class="palsep" aria-hidden="true"></span><button class="btn" id="dup">Duplizieren</button><button class="btn" id="del"${state.palettes.length < 2 ? ' disabled' : ''}>Löschen</button><button class="btn share" id="share">Link kopieren</button>`;
+  const n = state.palettes.length, b = bulk();
+  const all = n > 1 ? `<button class="pal" id="all" aria-pressed="${state.showAll}"><span class="n">Alle Paletten</span><small>${n}</small></button>` : '';
+  $('pals').innerHTML = all + state.palettes.map((p, i) => `<button class="pal" data-i="${i}" aria-pressed="${i === state.active && !state.showAll}"><i style="background:#${p.hex.replace('#', '')}"></i><span class="n">${esc(p.name || 'Palette')}</span></button>`).join('') + `<button class="pal add" id="add"><span class="n">+ Palette</span></button><div class="pals-actions"><button class="btn" id="dup"${b ? ' disabled' : ''}>Duplizieren</button><button class="btn" id="del"${n < 2 || b ? ' disabled' : ''}>Löschen</button></div>`;
 }
 function renderRows() {
   $('rows').innerHTML = scope().map(p => {
     const i = state.palettes.indexOf(p);
     const tiles = visible(p).map(s => `<button class="sw${s.stop === p.stop ? ' base' : ''}" data-hex="${s.hex}" title="${s.stop} · ${s.hex}${s.stop === p.stop ? ' (Basisfarbe)' : ''}" aria-label="${esc(p.name)} ${s.stop}, ${s.hex} kopieren"><span class="top" style="background:${s.hex};color:${textOn(s.hex)}"><i class="ci">${ICON_COPY}${ICON_CHECK}</i><em>${contrastLabel(s.hex)}</em></span><span class="bot"><b>${s.stop}</b><span>${s.hex}</span></span></button>`).join('');
-    return `<div class="prow${state.showAll && i === state.active ? ' active' : ''}"><h3 data-i="${i}"><span>${esc(p.name)}</span><small>${p.mode === 'linear' ? 'Linear' : 'Wahrgenommen'}</small></h3><div class="swatches${state.contrast ? '' : ' nocontrast'}" style="--n:${visible(p).length};grid-template-columns:${visible(p).map(s => s.stop === p.stop ? '1.5fr' : '1fr').join(' ')}">${tiles}</div></div>`;
+    return `<div class="prow${bulk() ? ' active' : ''}"><h3 data-i="${i}"><span>${esc(p.name)}</span><small>${p.mode === 'linear' ? 'Linear' : 'Wahrgenommen'}</small></h3><div class="swatches${state.contrast ? '' : ' nocontrast'}" style="--n:${visible(p).length};grid-template-columns:${visible(p).map(s => s.stop === p.stop ? '1.5fr' : '1fr').join(' ')}">${tiles}</div></div>`;
   }).join('');
 }
 function renderCode() {
@@ -519,17 +527,23 @@ function renderCode() {
 function syncControls() {
   const p = cur();
   $('name').value = p.name; $('hex').value = p.hex.replace('#', ''); $('picker').value = '#' + p.hex.replace('#', '').toLowerCase();
+  const bk = bulk();
+  ['name', 'hex', 'picker'].forEach(id => ($(id).disabled = bk));
+  $('name').closest('div').classList.toggle('dis', bk); $('hex').closest('div').classList.toggle('dis', bk);
+  if (bk) { $('name').value = ''; $('hex').value = ''; }
+  $('name').placeholder = bk ? 'Alle Paletten' : ''; $('hex').placeholder = bk ? '–' : '';
   $('stop').value = p.stop; $('h').value = p.h; $('s').value = p.s; $('lmin').value = p.lMin; $('lmax').value = p.lMax; $('ends').checked = state.ends; $('hash').checked = state.hash; $('contrast').checked = state.contrast;
-  [...$('mode').children].forEach(b => b.setAttribute('aria-pressed', b.dataset.v === p.mode));
+  [...$('mode').children].forEach(btn => btn.setAttribute('aria-pressed', !mixed('mode') && btn.dataset.v === p.mode));
+  if (mixed('stop')) $('stop').selectedIndex = -1;
   showValues();
 }
-function showValues() { [['h', 'hv'], ['s', 'sv'], ['lmin', 'lminv'], ['lmax', 'lmaxv']].forEach(([a, b]) => ($(b).textContent = $(a).value)); }
+function showValues() { [['h', 'hv', 'h'], ['s', 'sv', 's'], ['lmin', 'lminv', 'lMin'], ['lmax', 'lmaxv', 'lMax']].forEach(([a, b, k]) => ($(b).textContent = mixed(k) ? 'gemischt' : $(a).value)); }
 function render({ controls = false } = {}) {
   if (state.palettes.length < 2) state.showAll = false;
   compute();
   $('err').textContent = cur()._ok ? '' : 'Bitte 6-stelligen Hex-Wert eingeben (z. B. 1E70F6)';
   if (controls) syncControls();
-  renderPals(); renderRows(); renderSuggestions(); renderEditSel(); renderCode(); save();
+  renderPals(); renderRows(); renderSuggestions(); renderCode(); save();
 }
 
 /* ---------- Kopieren & „Kopiert“-Anzeige ---------- */
@@ -549,7 +563,7 @@ $('rows').addEventListener('click', async e => {
     return;
   }
   const h = e.target.closest('h3[data-i]');
-  if (h) { state.active = +h.dataset.i; render({ controls: true }); }
+  if (h) { state.active = +h.dataset.i; state.showAll = false; render({ controls: true }); }
 });
 async function flash(btn, text, label) { const ok = await copyText(text); btn.textContent = ok ? 'Kopiert ✓' : 'Kopieren nicht möglich'; setTimeout(() => (btn.textContent = label), 1500); }
 $('copy').addEventListener('click', e => flash(e.currentTarget, $('code').textContent, 'Code kopieren'));
@@ -561,14 +575,14 @@ $('figma').addEventListener('click', async e => {
 $('ase').addEventListener('click', e => downloadAse(e.currentTarget));
 
 /* ---------- Eingaben ---------- */
-const bind = (id, key, conv = v => v) => $(id).addEventListener('input', e => { cur()[key] = conv(e.target.value); showValues(); render(); });
+const bind = (id, key, conv = v => v) => $(id).addEventListener('input', e => { targets().forEach(p => (p[key] = conv(e.target.value))); showValues(); render(); });
 bind('name', 'name'); bind('h', 'h', Number); bind('s', 's', Number); bind('lmin', 'lMin', Number); bind('lmax', 'lMax', Number); bind('stop', 'stop', Number);
 $('hex').addEventListener('input', e => { cur().hex = e.target.value.replace('#', '').trim(); const ok = /^[0-9a-f]{6}$/i.test(cur().hex); if (ok) $('picker').value = '#' + cur().hex.toLowerCase(); render(); });
 $('picker').addEventListener('input', e => { cur().hex = e.target.value.slice(1).toUpperCase(); $('hex').value = cur().hex; render(); });
 $('ends').addEventListener('change', e => { state.ends = e.target.checked; render(); });
 $('hash').addEventListener('change', e => { state.hash = e.target.checked; save(); });
 $('contrast').addEventListener('change', e => { state.contrast = e.target.checked; render(); });
-$('mode').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; cur().mode = b.dataset.v; render({ controls: true }); });
+$('mode').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; targets().forEach(p => (p.mode = b.dataset.v)); render({ controls: true }); });
 $('sugwrap').addEventListener('toggle', renderSuggestions);
 $('sug').addEventListener('click', e => {
   const groups = buildSuggestions(); if (!groups) return;
@@ -578,17 +592,14 @@ $('sug').addEventListener('click', e => {
   else if (chip) changed = addSuggestion(groups[+chip.dataset.g].items[+chip.dataset.i]);
   if (changed) render();
 });
-$('editpal').addEventListener('change', e => { state.active = +e.target.value; render({ controls: true }); });
 $('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.fmt = b.dataset.k; $('codewrap').open = true; render(); });
+$('share').addEventListener('click', async e => {
+  const sh = e.currentTarget;
+  const ok = await copyText(location.href.split('#')[0] + encodeState());
+  sh.textContent = ok ? 'Link kopiert ✓' : 'Kopieren nicht möglich';
+  setTimeout(() => (sh.textContent = 'Link kopieren'), 1800);
+});
 $('pals').addEventListener('click', async e => {
-  const sh = e.target.closest('#share');
-  if (sh) {
-    const url = location.href.split('#')[0] + encodeState();
-    const ok = await copyText(url);
-    sh.textContent = ok ? 'Link kopiert ✓' : 'Kopieren nicht möglich';
-    setTimeout(() => { const b = $('share'); if (b) b.textContent = 'Link kopieren'; }, 1800);
-    return;
-  }
   if (e.target.closest('#dup')) { const c = { ...cur() }; delete c._sw; delete c._ok; delete c._slug; c.name += '-kopie'; state.palettes.splice(state.active + 1, 0, c); state.active++; return render({ controls: true }); }
   if (e.target.closest('#del')) { if (state.palettes.length < 2) return; state.palettes.splice(state.active, 1); state.active = Math.max(0, state.active - 1); return render({ controls: true }); }
   if (e.target.closest('#add')) { state.palettes.push(mk(state.palettes.length)); state.active = state.palettes.length - 1; state.showAll = false; return render({ controls: true }); }
