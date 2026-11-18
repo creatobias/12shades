@@ -45,13 +45,19 @@
   .prow h3 { margin:0 0 8px; font-size:14px; display:flex; justify-content:space-between; cursor:pointer; }
   .prow h3 small { color:var(--mut); font-weight:400; }
   .swatches { container-type:inline-size; display:grid; grid-template-columns: repeat(var(--n, 12), minmax(0, 1fr)); gap:6px; }
-  .sw { min-width:0; overflow:hidden; border-radius:10px; padding:10px 6px; min-height:74px; display:flex; flex-direction:column; justify-content:space-between; align-items:flex-start; text-align:left; cursor:pointer; border:1px solid rgba(0,0,0,.08); font:inherit; font-variant-numeric: tabular-nums; position:relative; }
-  .sw b { font-size: clamp(10px, calc((100cqw / var(--n, 12) - 18px) / 2), 14px); }
-  .sw span { font-size: clamp(8px, calc((100cqw / var(--n, 12) - 18px) / 4.4), 11.5px); white-space:nowrap; font-family: ui-monospace, Menlo, monospace; opacity:.9; }
-  @container (max-width: 520px) { .sw { min-height:108px; padding:8px 3px; align-items:center; } .sw span { writing-mode:vertical-rl; font-size:10px; } }
-  .sw.base::after { content:""; position:absolute; left:6px; right:6px; bottom:4px; height:3px; border-radius:2px; background:currentColor; opacity:.9; }
-  .sw.copied { outline:2px solid currentColor; outline-offset:-4px; }
-  .sw.copied span { font-weight:700; font-family:inherit; }
+  .sw { --w: calc(100cqw / var(--n, 12) - 6px); min-width:0; overflow:hidden; border-radius:clamp(8px, calc(var(--w) * .16), 16px); padding:0; display:flex; flex-direction:column; align-items:stretch; text-align:left; cursor:pointer; border:1px solid var(--line); background:var(--card); color:var(--fg); font:inherit; font-variant-numeric: tabular-nums; position:relative; }
+  .sw .top { display:flex; flex-direction:column; justify-content:space-between; align-items:flex-end; min-height:calc(var(--w) * .95); padding:clamp(4px, calc(var(--w) * .1), 10px); }
+  .sw .ci { width:clamp(10px, calc(var(--w) * .22), 22px); height:clamp(10px, calc(var(--w) * .22), 22px); display:block; }
+  .sw .ci svg { width:100%; height:100%; display:block; }
+  .sw .ci .ck { display:none; }
+  .sw.copied .ci .cp { display:none; }
+  .sw.copied .ci .ck { display:block; }
+  .sw .top em { font-style:normal; align-self:flex-start; white-space:nowrap; font-size:clamp(8px, calc(var(--w) * .13), 14px); }
+  .sw .bot { display:flex; flex-direction:column; gap:1px; padding:clamp(4px, calc(var(--w) * .1), 10px); }
+  .sw .bot b { font-size:clamp(11px, calc(var(--w) * .22), 20px); line-height:1.2; }
+  .sw .bot span { font-size:clamp(8px, calc(var(--w) * .125), 14px); white-space:nowrap; font-family: ui-monospace, Menlo, monospace; color:var(--mut); }
+  .sw.base { box-shadow: 0 0 0 2px var(--acc); border-color:var(--acc); }
+  @container (max-width: 520px) { .sw .top { min-height:44px; } .sw .top em { display:none; } .sw .bot { align-items:center; padding:6px 2px; } .sw .bot span { writing-mode:vertical-rl; font-size:10px; } }
   .out { margin-top:8px; }
   .tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
   .tabs button { padding:5px 10px; border:1px solid var(--line); border-radius:999px; background:transparent; color:inherit; font:inherit; font-size:13px; cursor:pointer; }
@@ -321,6 +327,9 @@ window.addEventListener('hashchange', () => { const inc = parseHash(location.has
 $('stop').innerHTML = STOP_CHOICES.map(s => `<option value="${s}">${s}</option>`).join('');
 
 const lum = hex => { const [r, g, b] = hexToRgb(hex).map(toLin); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+const contrastLabel = hex => { const L = lum(hex); const r = Math.max((L + 0.05) / 0.05, 1.05 / (L + 0.05)); return (r >= 7 ? 'AAA' : r >= 4.5 ? 'AA' : r >= 3 ? 'AA Large' : 'Fail') + ' ' + r.toFixed(2); };
+const ICON_COPY = '<svg class="cp" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="3"/><path d="M15 9V6a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3v6a3 3 0 0 0 3 3h3"/></svg>';
+const ICON_CHECK = '<svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 const textOn = hex => ((lum(hex) + 0.05) / 0.05 > 4.5 ? '#000' : '#fff');
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const slugOf = n => (String(n).trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '') || 'palette');
@@ -464,7 +473,7 @@ function renderPals() {
 function renderRows() {
   $('rows').innerHTML = scope().map(p => {
     const i = state.palettes.indexOf(p);
-    const tiles = visible(p).map(s => `<button class="sw${s.stop === p.stop ? ' base' : ''}" data-hex="${s.hex}" title="${s.stop} · ${s.hex}${s.stop === p.stop ? ' (Basisfarbe)' : ''}" style="background:${s.hex};color:${textOn(s.hex)}" aria-label="${esc(p.name)} ${s.stop}, ${s.hex} kopieren"><b>${s.stop}</b><span>${s.hex}</span></button>`).join('');
+    const tiles = visible(p).map(s => `<button class="sw${s.stop === p.stop ? ' base' : ''}" data-hex="${s.hex}" title="${s.stop} · ${s.hex}${s.stop === p.stop ? ' (Basisfarbe)' : ''}" aria-label="${esc(p.name)} ${s.stop}, ${s.hex} kopieren"><span class="top" style="background:${s.hex};color:${textOn(s.hex)}"><i class="ci">${ICON_COPY}${ICON_CHECK}</i><em>${contrastLabel(s.hex)}</em></span><span class="bot"><b>${s.stop}</b><span>${s.hex}</span></span></button>`).join('');
     return `<div class="prow${state.showAll && i === state.active ? ' active' : ''}"><h3 data-i="${i}"><span>${esc(p.name)}</span><small>${p.mode === 'linear' ? 'Linear' : 'Perceived'}</small></h3><div class="swatches" style="--n:${visible(p).length}">${tiles}</div></div>`;
   }).join('');
 }
@@ -499,14 +508,14 @@ async function copyText(text) {
   try { const t = document.createElement('textarea'); t.value = text; t.style.position = 'fixed'; t.style.opacity = '0'; document.body.appendChild(t); t.select(); const ok = document.execCommand('copy'); t.remove(); return ok; } catch (e) { return false; }
 }
 function clearCopied() {
-  document.querySelectorAll('.sw.copied').forEach(el => { el.classList.remove('copied'); el.querySelector('span').textContent = el.dataset.hex; });
+  document.querySelectorAll('.sw.copied').forEach(el => el.classList.remove('copied'));
 }
 // Jeder Klick irgendwo setzt die Anzeige zurück (Capture-Phase, läuft vor allen anderen Handlern)
 document.addEventListener('click', clearCopied, true);
 $('rows').addEventListener('click', async e => {
   const tile = e.target.closest('.sw');
   if (tile) {
-    if (await copyText(tile.dataset.hex)) { tile.classList.add('copied'); tile.querySelector('span').textContent = 'Kopiert ✓'; }
+    if (await copyText(tile.dataset.hex)) tile.classList.add('copied');
     return;
   }
   const h = e.target.closest('h3[data-i]');
