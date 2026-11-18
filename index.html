@@ -32,6 +32,10 @@
   input[type=text], select { width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:transparent; color:inherit; font:inherit; }
   .row { display:flex; gap:8px; align-items:center; }
   input[type=color] { width:44px; height:38px; padding:2px; border:1px solid var(--line); border-radius:8px; background:transparent; flex:none; }
+  input[type=color] { padding:0; overflow:hidden; cursor:pointer; }
+  input[type=color]::-webkit-color-swatch-wrapper { padding:0; }
+  input[type=color]::-webkit-color-swatch { border:0; border-radius:0; }
+  input[type=color]::-moz-color-swatch { border:0; border-radius:0; }
   input[type=range] { width:100%; accent-color: var(--acc); }
   .val { float:right; font-variant-numeric: tabular-nums; color:var(--fg); text-transform:none; letter-spacing:0; }
   .seg { display:flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
@@ -57,12 +61,15 @@
   .pal i { flex:none; width:14px; height:14px; border-radius:50%; border:1px solid rgba(0,0,0,.15); }
   .pal[aria-pressed=true] { background:var(--line); font-weight:600; }
   .pal.add { color:var(--mut); }
+  .pals-hint { margin:10px 0 0; font-size:12px; line-height:1.5; }
+  .btn.danger { background:#dc2626; border-color:#dc2626; color:#fff; }
   .pals-actions { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; padding-top:12px; border-top:1px solid var(--line); }
   @media (max-width: 860px) {
     .settings-grid { grid-template-columns: 1fr; gap:16px; }
     .pals { flex-direction:row; flex-wrap:wrap; align-items:center; padding:0 0 14px; border-right:0; border-bottom:1px solid var(--line); }
     .pal { width:auto; }
     .pals-actions { margin:0 0 0 auto; padding:0; border:0; }
+    .pals-hint { display:none; }
   }
   .actions { display:flex; gap:6px; margin-top:16px; flex-wrap:wrap; }
   /* Paletten-Zeilen */
@@ -332,20 +339,27 @@ const SEEDS = ['1E70F6', 'F97316', '10B981', 'A855F7', 'EC4899', 'EAB308', '06B6
 const NAMES = ['brand', 'accent', 'success', 'violet', 'pink', 'warning', 'info', 'danger'];
 const mk = (i, over = {}) => ({ name: NAMES[i % NAMES.length] + (i >= NAMES.length ? '-' + (Math.floor(i / NAMES.length) + 1) : ''), hex: SEEDS[i % SEEDS.length], stop: 500, mode: 'linear', h: 0, s: 0, lMin: 0, lMax: 100, ...over });
 
-let state = { palettes: [mk(0)], active: 0, fmt: 'css', ends: false, hash: true, contrast: true, showAll: false };
+let state = { palettes: [mk(0)], active: 0, fmt: 'css', ends: false, hash: true, contrast: true, showAll: false, sel: [0] };
 try { const saved = JSON.parse(localStorage.getItem(STORE) || 'null'); if (saved && saved.palettes && saved.palettes.length) state = { ...state, ...saved }; } catch (e) {}
 let viaLink = false;
 const save = () => { if (viaLink) return; try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} };
 
 const cur = () => state.palettes[state.active];
-const bulk = () => state.showAll && state.palettes.length > 1;
-const targets = () => (bulk() ? state.palettes : [cur()]);
-const mixed = key => bulk() && state.palettes.some(p => p[key] !== cur()[key]);
-const scope = () => (state.showAll && state.palettes.length > 1 ? state.palettes : [cur()]);
+const selIdx = () => {
+  const n = state.palettes.length;
+  if (state.showAll && n > 1) return state.palettes.map((_, i) => i);
+  const sel = [...new Set((state.sel || []).filter(i => i >= 0 && i < n))].sort((a, b) => a - b);
+  return sel.length ? sel : [Math.min(Math.max(state.active, 0), n - 1)];
+};
+const bulk = () => selIdx().length > 1;
+const targets = () => selIdx().map(i => state.palettes[i]);
+const mixed = key => bulk() && targets().some(p => p[key] !== cur()[key]);
+let delArmed = false, delTimer = 0;
+const scope = () => targets();
 const STOP_CHOICES = STOPS.filter(s => s !== 0 && s !== 1000);
 function encodeState() {
   const p = state.palettes.map(p => [encodeURIComponent(p.name), String(p.hex).replace('#', '').toUpperCase(), p.stop, p.mode === 'linear' ? 'l' : 'p', p.h, p.s, p.lMin, p.lMax].join(',')).join(';');
-  return '#p=' + p + '&a=' + state.active + (state.showAll ? '&v=all' : '') + (state.ends ? '&e=1' : '') + (state.hash ? '' : '&x=0') + (state.contrast ? '' : '&c=0');
+  return '#p=' + p + '&a=' + state.active + (state.showAll ? '&v=all' : (selIdx().length > 1 ? '&s=' + selIdx().join('.') : '')) + (state.ends ? '&e=1' : '') + (state.hash ? '' : '&x=0') + (state.contrast ? '' : '&c=0');
 }
 function parseHash(hash) {
   if (!hash || hash.length < 4) return null;
@@ -364,7 +378,9 @@ function parseHash(hash) {
       h: num(f[4], -20, 20, 0), s: num(f[5], -20, 20, 0), lMin: num(f[6], 0, 50, 0), lMax: num(f[7], 50, 100, 100),
     };
   });
-  return palettes.length ? { palettes, active: num(q.a, 0, palettes.length - 1, 0), showAll: q.v === 'all', ends: q.e === '1', hash: q.x !== '0', contrast: q.c !== '0' } : null;
+  const active = num(q.a, 0, palettes.length - 1, 0);
+  const sel = (q.s || '').split('.').map(x => parseInt(x, 10)).filter(i => i >= 0 && i < palettes.length);
+  return palettes.length ? { palettes, active, sel: sel.length > 1 ? sel : [active], showAll: q.v === 'all', ends: q.e === '1', hash: q.x !== '0', contrast: q.c !== '0' } : null;
 }
 const incoming = parseHash(location.hash);
 if (incoming) { state = { ...state, ...incoming }; viaLink = true; }
@@ -505,9 +521,10 @@ function renderSuggestions() {
   }).join('');
 }
 function renderPals() {
-  const n = state.palettes.length, b = bulk();
+  const n = state.palettes.length, sel = selIdx(), b = sel.length > 1;
   const all = n > 1 ? `<button class="pal" id="all" aria-pressed="${state.showAll}"><span class="n">Alle Paletten</span><small>${n}</small></button>` : '';
-  $('pals').innerHTML = all + state.palettes.map((p, i) => `<button class="pal" data-i="${i}" aria-pressed="${i === state.active && !state.showAll}"><i style="background:#${p.hex.replace('#', '')}"></i><span class="n">${esc(p.name || 'Palette')}</span></button>`).join('') + `<button class="pal add" id="add"><span class="n">+ Palette</span></button><div class="pals-actions"><button class="btn" id="dup"${b ? ' disabled' : ''}>Duplizieren</button><button class="btn" id="del"${n < 2 || b ? ' disabled' : ''}>Löschen</button></div>`;
+  const delLabel = b ? (delArmed ? `Wirklich ${sel.length} löschen?` : `${sel.length} löschen`) : 'Löschen';
+  $('pals').innerHTML = all + state.palettes.map((p, i) => `<button class="pal" data-i="${i}" aria-pressed="${!state.showAll && sel.includes(i)}"><i style="background:#${p.hex.replace('#', '')}"></i><span class="n">${esc(p.name || 'Palette')}</span></button>`).join('') + `<button class="pal add" id="add"><span class="n">+ Palette</span></button><div class="pals-actions"><button class="btn" id="dup">${b ? sel.length + ' ' : ''}Duplizieren</button><button class="btn${delArmed ? ' danger' : ''}" id="del"${sel.length >= n ? ' disabled' : ''}>${delLabel}</button></div>` + (n > 1 ? '<p class="hint pals-hint">⌘/Strg + Klick: mehrere auswählen<br>Shift + Klick: Bereich</p>' : '');
 }
 function renderRows() {
   $('rows').innerHTML = scope().map(p => {
@@ -521,7 +538,7 @@ function renderCode() {
   const [, fn] = FORMATS[state.fmt];
   $('code').textContent = fn();
   const n = scope().length;
-  $('scope').textContent = n > 1 ? `Export enthält alle ${n} Paletten.` : `Export enthält nur „${cur().name}“.`;
+  $('scope').textContent = n > 1 ? `Export enthält ${n === state.palettes.length ? 'alle ' : ''}${n} Paletten.` : `Export enthält nur „${cur().name}“.`;
   $('tabs').innerHTML = Object.entries(FORMATS).map(([k, [label]]) => `<button data-k="${k}" aria-pressed="${k === state.fmt}">${label}</button>`).join('');
 }
 function syncControls() {
@@ -540,6 +557,7 @@ function syncControls() {
 function showValues() { [['h', 'hv', 'h'], ['s', 'sv', 's'], ['lmin', 'lminv', 'lMin'], ['lmax', 'lmaxv', 'lMax']].forEach(([a, b, k]) => ($(b).textContent = mixed(k) ? 'gemischt' : $(a).value)); }
 function render({ controls = false } = {}) {
   if (state.palettes.length < 2) state.showAll = false;
+  if (!state.showAll) { state.sel = selIdx(); if (!state.sel.includes(state.active)) state.active = state.sel[0]; }
   compute();
   $('err').textContent = cur()._ok ? '' : 'Bitte 6-stelligen Hex-Wert eingeben (z. B. 1E70F6)';
   if (controls) syncControls();
@@ -563,7 +581,7 @@ $('rows').addEventListener('click', async e => {
     return;
   }
   const h = e.target.closest('h3[data-i]');
-  if (h) { state.active = +h.dataset.i; state.showAll = false; render({ controls: true }); }
+  if (h) { state.active = +h.dataset.i; state.sel = [state.active]; state.showAll = false; render({ controls: true }); }
 });
 async function flash(btn, text, label) { const ok = await copyText(text); btn.textContent = ok ? 'Kopiert ✓' : 'Kopieren nicht möglich'; setTimeout(() => (btn.textContent = label), 1500); }
 $('copy').addEventListener('click', e => flash(e.currentTarget, $('code').textContent, 'Code kopieren'));
@@ -600,11 +618,41 @@ $('share').addEventListener('click', async e => {
   setTimeout(() => (sh.textContent = 'Link kopieren'), 1800);
 });
 $('pals').addEventListener('click', async e => {
-  if (e.target.closest('#dup')) { const c = { ...cur() }; delete c._sw; delete c._ok; delete c._slug; c.name += '-kopie'; state.palettes.splice(state.active + 1, 0, c); state.active++; return render({ controls: true }); }
-  if (e.target.closest('#del')) { if (state.palettes.length < 2) return; state.palettes.splice(state.active, 1); state.active = Math.max(0, state.active - 1); return render({ controls: true }); }
-  if (e.target.closest('#add')) { state.palettes.push(mk(state.palettes.length)); state.active = state.palettes.length - 1; state.showAll = false; return render({ controls: true }); }
+  if (e.target.closest('#dup')) {
+    const idx = selIdx(), out = [], copies = [];
+    state.palettes.forEach((p, i) => {
+      out.push(p);
+      if (idx.includes(i)) { const c = { ...p }; delete c._sw; delete c._ok; delete c._slug; c.name += '-kopie'; copies.push(out.length); out.push(c); }
+    });
+    state.palettes = out; state.sel = copies; state.active = copies[copies.length - 1]; state.showAll = false; delArmed = false;
+    return render({ controls: true });
+  }
+  if (e.target.closest('#del')) {
+    const idx = selIdx();
+    if (idx.length >= state.palettes.length) return;
+    if (idx.length > 1 && !delArmed) { delArmed = true; clearTimeout(delTimer); delTimer = setTimeout(() => { delArmed = false; renderPals(); }, 3000); return renderPals(); }
+    delArmed = false; clearTimeout(delTimer);
+    state.palettes = state.palettes.filter((_, i) => !idx.includes(i));
+    state.active = Math.min(idx[0], state.palettes.length - 1); state.sel = [state.active]; state.showAll = false;
+    return render({ controls: true });
+  }
+  delArmed = false;
+  if (e.target.closest('#add')) { state.palettes.push(mk(state.palettes.length)); state.active = state.palettes.length - 1; state.sel = [state.active]; state.showAll = false; return render({ controls: true }); }
   if (e.target.closest('#all')) { state.showAll = true; return render({ controls: true }); }
-  const b = e.target.closest('.pal[data-i]'); if (b) { state.active = +b.dataset.i; state.showAll = false; render({ controls: true }); }
+  const b = e.target.closest('.pal[data-i]');
+  if (b) {
+    const i = +b.dataset.i;
+    let sel = selIdx();
+    if (e.metaKey || e.ctrlKey) {
+      if (sel.includes(i)) { if (sel.length > 1) sel = sel.filter(x => x !== i); if (state.active === i) state.active = sel[0]; }
+      else { sel = [...sel, i]; state.active = i; }
+    } else if (e.shiftKey) {
+      const a = Math.min(state.active, i), z = Math.max(state.active, i);
+      sel = []; for (let k = a; k <= z; k++) sel.push(k);
+    } else { sel = [i]; state.active = i; }
+    state.sel = sel.sort((x, y) => x - y); state.showAll = false;
+    render({ controls: true });
+  }
 });
 
 state.active = Math.min(state.active, state.palettes.length - 1);
