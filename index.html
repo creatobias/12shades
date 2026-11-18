@@ -56,7 +56,6 @@
   .sw .bot { display:flex; flex-direction:column; gap:1px; padding:clamp(4px, calc(var(--w) * .1), 10px); }
   .sw .bot b { font-size:clamp(10px, calc(var(--w) * .19), 17px); line-height:1.2; }
   .sw .bot span { font-size:clamp(9px, calc(var(--w) * .15), 15px); white-space:nowrap; font-family: ui-monospace, Menlo, monospace; color:var(--mut); }
-  .sw.base { box-shadow: 0 0 0 2px var(--acc); border-color:var(--acc); }
   @container (max-width: 520px) { .sw .top { min-height:44px; } .sw .top em { display:none; } .sw .bot { align-items:center; padding:6px 2px; } .sw .bot span { writing-mode:vertical-rl; font-size:10px; } }
   .out { margin-top:8px; }
   .tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
@@ -474,7 +473,7 @@ function renderRows() {
   $('rows').innerHTML = scope().map(p => {
     const i = state.palettes.indexOf(p);
     const tiles = visible(p).map(s => `<button class="sw${s.stop === p.stop ? ' base' : ''}" data-hex="${s.hex}" title="${s.stop} · ${s.hex}${s.stop === p.stop ? ' (Basisfarbe)' : ''}" aria-label="${esc(p.name)} ${s.stop}, ${s.hex} kopieren"><span class="top" style="background:${s.hex};color:${textOn(s.hex)}"><i class="ci">${ICON_COPY}${ICON_CHECK}</i><em>${contrastLabel(s.hex)}</em></span><span class="bot"><b>${s.stop}</b><span>${s.hex}</span></span></button>`).join('');
-    return `<div class="prow${state.showAll && i === state.active ? ' active' : ''}"><h3 data-i="${i}"><span>${esc(p.name)}</span><small>${p.mode === 'linear' ? 'Linear' : 'Perceived'}</small></h3><div class="swatches" style="--n:${visible(p).length}">${tiles}</div></div>`;
+    return `<div class="prow${state.showAll && i === state.active ? ' active' : ''}"><h3 data-i="${i}"><span>${esc(p.name)}</span><small>${p.mode === 'linear' ? 'Linear' : 'Perceived'}</small></h3><div class="swatches" style="--n:${visible(p).length};grid-template-columns:${visible(p).map(s => s.stop === p.stop ? '1.4fr' : '1fr').join(' ')}">${tiles}</div></div>`;
   }).join('');
 }
 function renderCode() {
