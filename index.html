@@ -40,6 +40,11 @@
   .btn:disabled { opacity:.4; cursor:not-allowed; }
   .btn.primary { background:var(--acc); color:var(--bg); border-color:var(--acc); font-weight:600; }
   .chk { display:flex; gap:8px; align-items:center; margin-top:14px; font-size:13px; color:var(--mut); text-transform:none; letter-spacing:0; font-weight:400; }
+  .chk input[type=checkbox] { appearance:none; -webkit-appearance:none; flex:none; width:18px; height:18px; margin:0; border:1.5px solid var(--mut); border-radius:5px; background:transparent center / 12px 12px no-repeat; cursor:pointer; transition:background-color .12s, border-color .12s; }
+  .chk input[type=checkbox]:hover { border-color:var(--fg); }
+  .chk input[type=checkbox]:checked { background-color:var(--acc); border-color:var(--acc); background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E"); }
+  @media (prefers-color-scheme: dark) { .chk input[type=checkbox]:checked { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231c1917' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E"); } }
+  .chk input[type=checkbox]:focus-visible { outline:2px solid var(--acc); outline-offset:2px; }
   .err { color:#dc2626; font-size:13px; min-height:18px; margin-top:6px; }
   /* Palettenleiste */
   .pals { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; align-items:center; }
@@ -159,7 +164,7 @@
 
     <section>
       <div class="rowsbar">
-        <label class="chk"><input id="contrast" type="checkbox"> Kontrast einblenden</label>
+        <label class="chk"><input id="contrast" type="checkbox" checked> Kontrast einblenden</label>
         <label class="chk"><input id="hash" type="checkbox"> Hex inkl. „#“ kopieren</label>
         <label class="chk"><input id="ends" type="checkbox"> Shades 0 und 1000 anzeigen / exportieren</label>
       </div>
