@@ -165,7 +165,7 @@
     <section>
       <div class="rowsbar">
         <label class="chk"><input id="contrast" type="checkbox" checked> Kontrast einblenden</label>
-        <label class="chk"><input id="hash" type="checkbox"> Hex inkl. „#“ kopieren</label>
+        <label class="chk"><input id="hash" type="checkbox" checked> Hex inkl. „#“ kopieren</label>
         <label class="chk"><input id="ends" type="checkbox"> Shades 0 und 1000 anzeigen / exportieren</label>
       </div>
       <div id="rows"></div>
@@ -321,7 +321,7 @@ const SEEDS = ['1E70F6', 'F97316', '10B981', 'A855F7', 'EC4899', 'EAB308', '06B6
 const NAMES = ['brand', 'accent', 'success', 'violet', 'pink', 'warning', 'info', 'danger'];
 const mk = (i, over = {}) => ({ name: NAMES[i % NAMES.length] + (i >= NAMES.length ? '-' + (Math.floor(i / NAMES.length) + 1) : ''), hex: SEEDS[i % SEEDS.length], stop: 500, mode: 'linear', h: 0, s: 0, lMin: 0, lMax: 100, ...over });
 
-let state = { palettes: [mk(0)], active: 0, fmt: 'css', ends: false, hash: false, contrast: true, showAll: false };
+let state = { palettes: [mk(0)], active: 0, fmt: 'css', ends: false, hash: true, contrast: true, showAll: false };
 try { const saved = JSON.parse(localStorage.getItem(STORE) || 'null'); if (saved && saved.palettes && saved.palettes.length) state = { ...state, ...saved }; } catch (e) {}
 let viaLink = false;
 const save = () => { if (viaLink) return; try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} };
@@ -331,7 +331,7 @@ const scope = () => (state.showAll && state.palettes.length > 1 ? state.palettes
 const STOP_CHOICES = STOPS.filter(s => s !== 0 && s !== 1000);
 function encodeState() {
   const p = state.palettes.map(p => [encodeURIComponent(p.name), String(p.hex).replace('#', '').toUpperCase(), p.stop, p.mode === 'linear' ? 'l' : 'p', p.h, p.s, p.lMin, p.lMax].join(',')).join(';');
-  return '#p=' + p + '&a=' + state.active + (state.showAll ? '&v=all' : '') + (state.ends ? '&e=1' : '') + (state.hash ? '&x=1' : '') + (state.contrast ? '' : '&c=0');
+  return '#p=' + p + '&a=' + state.active + (state.showAll ? '&v=all' : '') + (state.ends ? '&e=1' : '') + (state.hash ? '' : '&x=0') + (state.contrast ? '' : '&c=0');
 }
 function parseHash(hash) {
   if (!hash || hash.length < 4) return null;
@@ -350,7 +350,7 @@ function parseHash(hash) {
       h: num(f[4], -20, 20, 0), s: num(f[5], -20, 20, 0), lMin: num(f[6], 0, 50, 0), lMax: num(f[7], 50, 100, 100),
     };
   });
-  return palettes.length ? { palettes, active: num(q.a, 0, palettes.length - 1, 0), showAll: q.v === 'all', ends: q.e === '1', hash: q.x === '1', contrast: q.c !== '0' } : null;
+  return palettes.length ? { palettes, active: num(q.a, 0, palettes.length - 1, 0), showAll: q.v === 'all', ends: q.e === '1', hash: q.x !== '0', contrast: q.c !== '0' } : null;
 }
 const incoming = parseHash(location.hash);
 if (incoming) { state = { ...state, ...incoming }; viaLink = true; }
