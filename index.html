@@ -12,12 +12,18 @@
   main { max-width: 1440px; margin: 0 auto; padding: 32px 20px 64px; }
   h1 { font-size: 24px; margin: 0 0 20px; letter-spacing: -.01em; }
   p.sub { color: var(--mut); margin: 0 0 20px; }
-  .grid { display:grid; grid-template-columns: 300px 1fr; gap: 24px; align-items:start; }
-  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
   .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; }
   label { display:block; font-size:12px; font-weight:600; color:var(--mut); margin: 14px 0 4px; text-transform:uppercase; letter-spacing:.04em; }
   label.first { margin-top:0; }
-  #editsel { padding-bottom:14px; margin-bottom:14px; border-bottom:1px solid var(--line); }
+  .settings { margin-bottom:16px; }
+  .core { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:14px 20px; align-items:start; }
+  .core label, .tune-grid label { margin:0 0 4px; }
+  .core .err { min-height:0; margin-top:4px; }
+  .core .err:empty { display:none; }
+  .tune { margin-top:16px; padding-top:14px; border-top:1px solid var(--line); }
+  .tune-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:14px 24px; margin-top:10px; }
+  .rowsbar { display:flex; justify-content:flex-end; margin:0 0 4px; }
+  .rowsbar .chk { margin:0; }
   [hidden] { display:none !important; }
   input[type=text], select { width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:transparent; color:inherit; font:inherit; }
   .row { display:flex; gap:8px; align-items:center; }
@@ -39,6 +45,7 @@
   .pal i { width:16px; height:16px; border-radius:50%; border:1px solid rgba(0,0,0,.15); }
   .pal[aria-pressed=true] { border-color:var(--acc); box-shadow: 0 0 0 1px var(--acc); }
   .actions { display:flex; gap:6px; margin-top:16px; flex-wrap:wrap; }
+  .palsep { width:1px; height:22px; background:var(--line); margin:0 4px; }
   /* Paletten-Zeilen */
   .prow { margin-bottom:18px; padding:10px; border-radius:12px; border:1px solid transparent; }
   .prow.active { border-color:var(--line); background:var(--card); }
@@ -108,37 +115,44 @@
 
   <div class="pals" id="pals"></div>
 
-  <div class="grid">
-    <section class="card">
-      <div id="editsel" hidden>
-        <label class="first" for="editpal">Palette bearbeiten</label>
-        <select id="editpal"></select>
+  <div>
+    <section class="card settings">
+      <div class="core">
+        <div id="editsel" hidden>
+          <label for="editpal">Palette bearbeiten</label>
+          <select id="editpal"></select>
+        </div>
+        <div>
+          <label id="namelabel" for="name">Name</label>
+          <input id="name" type="text" spellcheck="false">
+        </div>
+        <div>
+          <label for="hex">Basisfarbe</label>
+          <div class="row"><input id="picker" type="color"><input id="hex" type="text" maxlength="7" spellcheck="false"></div>
+          <div class="err" id="err"></div>
+        </div>
+        <div>
+          <label for="stop">Basisfarbe Shade</label>
+          <select id="stop"></select>
+        </div>
+        <div>
+          <label>Modus</label>
+          <div class="seg" id="mode"><button data-v="linear">Linear</button><button data-v="perceived">Perceived</button></div>
+        </div>
       </div>
-      <label id="namelabel" class="first" for="name">Name</label>
-      <input id="name" type="text" spellcheck="false">
-      <label for="hex">Basisfarbe</label>
-      <div class="row"><input id="picker" type="color"><input id="hex" type="text" maxlength="7" spellcheck="false"></div>
-      <div class="err" id="err"></div>
-      <label for="stop">Basisfarbe Shade</label>
-      <select id="stop"></select>
-      <label>Modus</label>
-      <div class="seg" id="mode"><button data-v="linear">Linear</button><button data-v="perceived">Perceived</button></div>
-      <label for="h">Farbton-Shift <span class="val" id="hv"></span></label>
-      <input id="h" type="range" min="-20" max="20" step="1">
-      <label for="s">Sättigung an den Rändern <span class="val" id="sv"></span></label>
-      <input id="s" type="range" min="-20" max="20" step="1">
-      <label for="lmin">Min. Helligkeit (Shade 1000) <span class="val" id="lminv"></span></label>
-      <input id="lmin" type="range" min="0" max="50" step="1">
-      <label for="lmax">Max. Helligkeit (Shade 0) <span class="val" id="lmaxv"></span></label>
-      <input id="lmax" type="range" min="50" max="100" step="1">
-      <label class="chk"><input id="ends" type="checkbox"> Shades 0 und 1000 anzeigen / exportieren</label>
-      <div class="actions">
-        <button class="btn" id="dup">Duplizieren</button>
-        <button class="btn" id="del">Löschen</button>
-      </div>
+      <details class="tune" id="tune" open>
+        <summary class="sug-head"><h3>Feintuning</h3></summary>
+        <div class="tune-grid">
+          <div><label for="h">Farbton-Shift <span class="val" id="hv"></span></label><input id="h" type="range" min="-20" max="20" step="1"></div>
+          <div><label for="s">Sättigung an den Rändern <span class="val" id="sv"></span></label><input id="s" type="range" min="-20" max="20" step="1"></div>
+          <div><label for="lmin">Min. Helligkeit (Shade 1000) <span class="val" id="lminv"></span></label><input id="lmin" type="range" min="0" max="50" step="1"></div>
+          <div><label for="lmax">Max. Helligkeit (Shade 0) <span class="val" id="lmaxv"></span></label><input id="lmax" type="range" min="50" max="100" step="1"></div>
+        </div>
+      </details>
     </section>
 
     <section>
+      <div class="rowsbar"><label class="chk"><input id="ends" type="checkbox"> Shades 0 und 1000 anzeigen / exportieren</label></div>
       <div id="rows"></div>
       <details class="card sug-wrap" id="sugwrap">
         <summary class="sug-head"><h3><span aria-hidden="true">🎨</span>Vorschläge für weitere Paletten</h3><span class="sug-sub" id="sugsub"></span></summary>
@@ -467,7 +481,7 @@ function renderEditSel() {
 }
 function renderPals() {
   const all = state.palettes.length > 1 ? `<button class="pal" id="all" aria-pressed="${state.showAll}">Alle <small>${state.palettes.length}</small></button>` : '';
-  $('pals').innerHTML = all + state.palettes.map((p, i) => `<button class="pal" data-i="${i}" aria-pressed="${i === state.active && !state.showAll}"><i style="background:#${p.hex.replace('#', '')}"></i>${esc(p.name || 'Palette')}</button>`).join('') + `<button class="btn" id="add">+ Palette</button><button class="btn share" id="share">Link kopieren</button>`;
+  $('pals').innerHTML = all + state.palettes.map((p, i) => `<button class="pal" data-i="${i}" aria-pressed="${i === state.active && !state.showAll}"><i style="background:#${p.hex.replace('#', '')}"></i>${esc(p.name || 'Palette')}</button>`).join('') + `<button class="btn" id="add">+ Palette</button><span class="palsep" aria-hidden="true"></span><button class="btn" id="dup">Duplizieren</button><button class="btn" id="del"${state.palettes.length < 2 ? ' disabled' : ''}>Löschen</button><button class="btn share" id="share">Link kopieren</button>`;
 }
 function renderRows() {
   $('rows').innerHTML = scope().map(p => {
@@ -489,7 +503,6 @@ function syncControls() {
   $('name').value = p.name; $('hex').value = p.hex.replace('#', ''); $('picker').value = '#' + p.hex.replace('#', '').toLowerCase();
   $('stop').value = p.stop; $('h').value = p.h; $('s').value = p.s; $('lmin').value = p.lMin; $('lmax').value = p.lMax; $('ends').checked = state.ends;
   [...$('mode').children].forEach(b => b.setAttribute('aria-pressed', b.dataset.v === p.mode));
-  $('del').disabled = state.palettes.length < 2;
   showValues();
 }
 function showValues() { [['h', 'hv'], ['s', 'sv'], ['lmin', 'lminv'], ['lmax', 'lmaxv']].forEach(([a, b]) => ($(b).textContent = $(a).value)); }
@@ -556,12 +569,12 @@ $('pals').addEventListener('click', async e => {
     setTimeout(() => { const b = $('share'); if (b) b.textContent = 'Link kopieren'; }, 1800);
     return;
   }
+  if (e.target.closest('#dup')) { const c = { ...cur() }; delete c._sw; delete c._ok; delete c._slug; c.name += '-kopie'; state.palettes.splice(state.active + 1, 0, c); state.active++; return render({ controls: true }); }
+  if (e.target.closest('#del')) { if (state.palettes.length < 2) return; state.palettes.splice(state.active, 1); state.active = Math.max(0, state.active - 1); return render({ controls: true }); }
   if (e.target.closest('#add')) { state.palettes.push(mk(state.palettes.length)); state.active = state.palettes.length - 1; state.showAll = false; return render({ controls: true }); }
   if (e.target.closest('#all')) { state.showAll = true; return render({ controls: true }); }
   const b = e.target.closest('.pal[data-i]'); if (b) { state.active = +b.dataset.i; state.showAll = false; render({ controls: true }); }
 });
-$('dup').addEventListener('click', () => { const c = { ...cur() }; delete c._sw; delete c._ok; delete c._slug; c.name += '-kopie'; state.palettes.splice(state.active + 1, 0, c); state.active++; render({ controls: true }); });
-$('del').addEventListener('click', () => { if (state.palettes.length < 2) return; state.palettes.splice(state.active, 1); state.active = Math.max(0, state.active - 1); render({ controls: true }); });
 
 state.active = Math.min(state.active, state.palettes.length - 1);
 render({ controls: true });
