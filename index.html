@@ -67,11 +67,13 @@
   .pal[aria-pressed=true] { background:var(--line); font-weight:600; }
   .pal.add { color:var(--mut); }
   .btn.danger { background:#dc2626; border-color:#dc2626; color:#fff; }
-  .pals-actions { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; padding-top:12px; border-top:1px solid var(--line); }
+  .pal.add { margin-bottom:14px; }
+  .pals-actions { display:flex; gap:6px; flex-wrap:wrap; margin-top:auto; padding-top:12px; border-top:1px solid var(--line); }
   @media (max-width: 860px) {
     .settings-grid { grid-template-columns: 1fr; gap:16px; }
     .pals { flex-direction:row; flex-wrap:wrap; align-items:center; padding:0 0 14px; border-right:0; border-bottom:1px solid var(--line); }
     .pal { width:auto; }
+    .pal.add { margin-bottom:0; }
     .pals-actions { margin:0 0 0 auto; padding:0; border:0; }
   }
   .actions { display:flex; gap:6px; margin-top:16px; flex-wrap:wrap; }
