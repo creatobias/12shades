@@ -227,9 +227,10 @@
       </div>
       </section>
   </div>
-<p class="hint" style="margin-top:32px">Berechnungslogik inspiriert von <a href="https://www.tints.dev" target="_blank" rel="noopener noreferrer" style="color:inherit">tints.dev</a> von Simeon Griggs.</p>
+<p class="hint" style="margin-top:32px">by <a href="https://creatobias.de" target="_blank" rel="noopener noreferrer" style="color:inherit">creatobias</a> · basiert auf <a href="https://www.tints.dev" target="_blank" rel="noopener noreferrer" style="color:inherit">tints.dev</a> by Simeon Griggs (<a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener noreferrer" style="color:inherit">CC BY-NC 4.0</a>).</p>
 </main>
 <script>
+/* Palettenlogik nachgebaut nach tints.dev von Simeon Griggs (CC BY-NC 4.0, https://github.com/SimeonGriggs/tints.dev), erweitert um Shade 25. */
 /* ---------- 12shades-Core: Palette aus einer Basisfarbe (inkl. Shade 25) ---------- */
 const STOPS = [0, 25, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950, 1000];
 // Position in der Originalreihe (0,50,100,...,1000). 25 liegt "dazwischen" (0.5),
@@ -272,7 +273,9 @@ function hslToRgb([h, s, l]) {
   return [r + m, g + m, b + m];
 }
 
-/* --- HSLuv (perceptual) --- */
+/* --- HSLuv (perceptual) ---
+   Umrechnung nach der HSLuv-Referenzimplementierung von Alexei Boronine (MIT-Lizenz, https://github.com/hsluv/hsluv).
+   Copyright (c) Alexei Boronine. Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files, to deal in the Software without restriction, subject to the MIT License terms. */
 const M = [[3.240969941904521, -1.537383177570093, -0.498610760293], [-0.96924363628087, 1.87596750150772, 0.041555057407175], [0.055630079696993, -0.20397695888897, 1.056971514242878]];
 const MI = [[0.41239079926595, 0.35758433938387, 0.18048078840183], [0.21263900587151, 0.71516867876775, 0.072192315360733], [0.019330818715591, 0.11919477979462, 0.95053215224966]];
 const REF_U = 0.19783000664283, REF_V = 0.46831999493879, KAPPA = 903.2962962, EPS = 0.0088564516;
